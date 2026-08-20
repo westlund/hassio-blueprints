@@ -52,8 +52,12 @@ integration and device-generation differences can still affect the result.
 
 | Remote | Integration | Candidate short | Candidate hold | Candidate release | Status |
 |---|---|---|---|---|---|
+| [Philips Hue Smart Button, `8718699693985`](https://www.zigbee2mqtt.io/devices/8718699693985.html) | Zigbee2MQTT/MQTT | `press` | `hold` | `release` | Possibly compatible; needs testing |
+| [IKEA TRADFRI Shortcut Button, `E1812`](https://www.zigbee2mqtt.io/devices/E1812.html) | Zigbee2MQTT/MQTT | `on` | `brightness_move_up` | `brightness_stop` | Possibly compatible; needs testing |
+| [Aqara Wireless Mini Switch, `WXKG12LM`](https://www.zigbee2mqtt.io/devices/WXKG12LM.html) | Zigbee2MQTT/MQTT | `single` | `hold` | `release` | Possibly compatible; needs testing |
+| [Aqara Wireless Mini Switch T1, `WXKG13LM`](https://www.zigbee2mqtt.io/devices/WXKG13LM.html) | Zigbee2MQTT/MQTT | `single` | `hold` | `release` | Possibly compatible; needs testing |
 | IKEA RODRET, `E2201` | Zigbee2MQTT/MQTT | `on` or `off` | `brightness_move_up` or `brightness_move_down` | `brightness_stop` | Expected |
-| Aqara Wireless Mini Switch, `WXKG11LM`, variants that expose hold and release | Zigbee2MQTT/MQTT | `single` | `hold` | `release` | Expected, variant-dependent |
+| [Aqara Wireless Mini Switch, `WXKG11LM`](https://www.zigbee2mqtt.io/devices/WXKG11LM.html), variants that expose hold and release | Zigbee2MQTT/MQTT | `single` | `hold` | `release` | Possibly compatible; needs testing and is variant-dependent |
 | Shelly Plus 1 or Plus 2PM, generation 2 | Native Home Assistant Shelly integration, input mode `Button` | `single_push` | `long_push` | `btn_up` | Expected; `double_push` can be mapped to `double` |
 
 Equivalent device triggers exposed by ZHA or deCONZ should also work when they
@@ -82,6 +86,7 @@ verified table.
 | Remote or category | Integration | Exposed actions | Reason |
 |---|---|---|---|
 | SONOFF SNZB-01P | Zigbee2MQTT/MQTT | `single`, `double`, `long` | No separate hold-start and release/stop action |
+| Flic buttons through Home Assistant's standard Flic integration | Native Home Assistant Flic integration | `single`, `double`, `hold` | No separate release event in the documented integration event set |
 | Shelly generation 1 using only native click events | Native Home Assistant Shelly integration | `single`, `double`, `long` and related completed-click events | No distinct release event in this event set; a separately verified raw-input solution would be required |
 | Aqara `WXKG11LM` variants that expose click counts but no `hold` and `release` | Any | Typically `single`, `double`, `triple`, `quadruple` | Model name alone is insufficient; these variants cannot stop continuous dimming |
 | Any remote that reports a long press only after the button is released | Any | One completed-long-press event | Continuous dimming cannot start while the button is held |
@@ -119,3 +124,10 @@ Do not include MQTT credentials, API tokens, Zigbee network keys, personal
 addresses or other secrets. Confirmed reports will be added to this page so
 future users can select known-good event mappings instead of rediscovering
 them.
+
+If you have one of the devices marked **possibly compatible**, please test it
+and report the exact action names and result. If you would rather have a button
+officially tested for inclusion in the verified table, open a GitHub issue and
+offer to send the device for testing. Shipping details can then be agreed
+privately; do not publish a postal address or other personal information in the
+issue.

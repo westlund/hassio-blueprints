@@ -9,7 +9,7 @@ committed to the installation's configuration repository.
 
 ### Automation blueprints
 
-#### Universal Magic Button – Helper-Free Dimmer 1.3
+#### Universal Magic Button – Helper-Free Dimmer 1.4
 
 [`universal_magic_button.yaml`](blueprints/automation/papamike/universal_magic_button.yaml)
 solves a deceptively awkward problem: dimming both up and down with only one
