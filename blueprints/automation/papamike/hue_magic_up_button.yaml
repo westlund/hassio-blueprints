@@ -1,11 +1,11 @@
 blueprint:
-  name: Hue Magic Up Button - Helper-Free Dimmer 1.0
+  name: Hue Magic Up Button - Helper-Free Dimmer 1.1
   description: >
     A helper-free temporary one-button light controller for the up button on a
     Philips Hue Dimmer Switch. A short press toggles the selected lights. Hold
     alternates between increasing and decreasing brightness, and release stops
-    dimming and synchronizes all target lights. After a configurable period of
-    inactivity, a new dimming session can always start upwards.
+    dimming and synchronizes all target lights. Repeated hold messages from the
+    remote are ignored until the button is released.
   author: Michael Westlund
   source_url: https://github.com/westlund/hassio-blueprints/blob/main/blueprints/automation/papamike/hue_magic_up_button.yaml
   domain: automation
@@ -52,28 +52,9 @@ blueprint:
           step: 1
           unit_of_measurement: "%/s"
           mode: slider
-    reset_direction_after_inactivity:
-      name: Reset dimming direction after inactivity
-      description: When enabled, a new session always starts by dimming upwards.
-      default: true
-      selector:
-        boolean:
-    inactivity_timeout:
-      name: Inactivity timeout
-      description: Seconds before the dimming direction resets to upwards.
-      default: 10
-      selector:
-        number:
-          min: 1
-          max: 300
-          step: 1
-          unit_of_measurement: seconds
-          mode: box
-
 variables:
   target_lights: !input target_light
   reference_light_entity: !input reference_light
-  reset_direction: !input reset_direction_after_inactivity
   configured_dimming_speed: !input dimming_speed
 
 triggers:
@@ -183,54 +164,5 @@ actions:
             data:
               brightness: "{{ encoded_brightness }}"
 
-  - if:
-      - condition: template
-        value_template: "{{ reset_direction }}"
-    then:
-      - delay:
-          seconds: !input inactivity_timeout
-      - variables:
-          brightness_before_reset: >-
-            {% if reference_light_entity %}
-              {{ state_attr(reference_light_entity, 'brightness') | int(0) }}
-            {% else %}
-              {% set values = namespace(items=[]) %}
-              {% for entity in target_lights %}
-                {% set value = state_attr(entity, 'brightness') %}
-                {% if value is number %}
-                  {% set values.items = values.items + [value | int] %}
-                {% endif %}
-              {% endfor %}
-              {{ ((values.items | sum) / (values.items | count)) | round(0) | int
-                 if values.items else 0 }}
-            {% endif %}
-          target_is_on: >-
-            {% if reference_light_entity %}
-              {{ is_state(reference_light_entity, 'on') }}
-            {% else %}
-              {% set lights = namespace(any_on=false) %}
-              {% for entity in target_lights %}
-                {% if is_state(entity, 'on') %}
-                  {% set lights.any_on = true %}
-                {% endif %}
-              {% endfor %}
-              {{ lights.any_on }}
-            {% endif %}
-      - if:
-          - condition: template
-            value_template: >-
-              {{ brightness_before_reset > 0 and
-                 brightness_before_reset % 2 == 1 and
-                 target_is_on }}
-        then:
-          - action: light.turn_on
-            target:
-              entity_id: >-
-                {{ reference_light_entity if reference_light_entity else target_lights }}
-            data:
-              brightness: >-
-                {{ 2 if brightness_before_reset <= 1 else
-                   brightness_before_reset - 1 }}
-
-mode: restart
+mode: single
 max_exceeded: silent
