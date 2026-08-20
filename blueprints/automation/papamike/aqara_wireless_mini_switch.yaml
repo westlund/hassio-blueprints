@@ -1,9 +1,9 @@
 blueprint:
-  name: Aqara Wireless Mini Switch for Zigbee2MQTT v1.2
+  name: Aqara Magic Button - Helper-Free Dimmer for Zigbee2MQTT v1.2
   description: >
-    One-button light controller with toggle, configurable double press and
-    helper-free alternating dimming. The next dimming direction is stored in
-    the odd/even parity of the raw brightness value.
+    A helper-free one-button light controller with toggle, configurable double
+    press and alternating up/down dimming. After a configurable period of
+    inactivity, a new dimming session can always start by dimming upwards.
   author: Michael Westlund
   source_url: https://github.com/westlund/hassio-blueprints/blob/main/blueprints/automation/papamike/aqara_wireless_mini_switch.yaml
   domain: automation
@@ -21,9 +21,8 @@ blueprint:
     reference_light:
       name: Reference light (optional)
       description: >
-        A target light that owns the direction parity for the entire group.
-        When omitted, the average brightness of all target lights is used and
-        the target lights are aligned when parity is stored.
+        A target light that acts as the state reference for the entire group.
+        When omitted, the target lights are handled together automatically.
       default:
       selector:
         entity:
