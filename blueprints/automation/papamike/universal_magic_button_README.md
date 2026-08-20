@@ -24,10 +24,12 @@ deCONZ or another integration.
   actions.
 - Hold alternates between dimming upwards and downwards without a helper.
 - Repeated hold messages are ignored for the duration of the physical hold.
-- Release stops dimming and synchronizes every target light to the reference
-  light or calculated group level.
-- Lights that do not follow smooth relative dimming are corrected to the final
-  absolute brightness when the button is released.
+- Release stops dimming, synchronizes every brightness-capable target and uses
+  the resulting level to determine the final state of pure on/off targets.
+- Dimmable lights that do not follow smooth relative dimming are corrected to
+  the final absolute brightness when the button is released.
+- Pure on/off target lights are left on or off after dimming according to a
+  configurable brightness breakpoint (50% by default).
 
 ## Requirements
 
@@ -48,8 +50,11 @@ event without a separate release event is not sufficient.
 
 Home Assistant does not expose continuous dimming as one standardized light
 capability that a blueprint selector can filter reliably across integrations.
-The user must therefore verify these requirements when choosing target and
-reference lights.
+The reference input is a real Home Assistant light-entity picker, but entity
+selectors cannot filter on `supported_color_modes`. The blueprint validates
+that a selected reference reports brightness support when a hold starts. The
+user must still verify actual continuous-dimming behavior for the specific
+light and integration.
 
 ## Tested and expected compatibility
 
@@ -102,10 +107,24 @@ blueprint calculates a level from the target lights that report brightness.
 For a mixed group, select one of the continuously dimmable target lights as the
 reference. It determines the initial direction and final level for the entire
 group. A non-continuously-dimmable light must not be selected as reference.
+An invalid reference or an automatically detected dimmable/on-off mix without
+one stops the hold sequence with an error visible in the automation trace. A
+brightness-capable target that performs poorly during continuous dimming
+cannot be detected automatically; the user must select a suitable reference
+in that case.
 
-All selected lights receive every dimming attempt. At release, all lights are
-set to the final absolute brightness so a less capable group member can catch
-up with the reference light.
+All brightness-capable targets receive every dimming attempt. At release, they
+are set to the final absolute brightness so a less capable dimmable member can
+catch up with the reference light. Pure on/off targets do not receive dimming
+commands. Instead, **On/off light breakpoint** determines their final state:
+they remain on when the resulting brightness is equal to or above the selected
+percentage, and are turned off below it. This breakpoint is applied only after
+a completed hold-dimming sequence; it does not change short- or double-press
+behavior.
+
+For mixed configurations, select the individual light entities as targets.
+A Home Assistant light group is classified as one entity, so the blueprint
+cannot reliably identify hidden on/off-only members inside that group.
 
 ### 4. Configure press actions
 
@@ -199,6 +218,14 @@ after an inactivity timeout.
   target as the reference light.
 - A mixed group behaves unpredictably: verify that the selected reference is a
   target light with continuous-dimming support.
+- Hold stops immediately with a configuration error: verify that at least one
+  target reports brightness support, that all selected targets are available,
+  and that any selected reference is a dimmable target. A detected mix with
+  pure on/off targets requires a reference; other continuous-dimming
+  limitations must be assessed by the user.
+- An on/off light has the unexpected final state: compare the resulting group
+  brightness with **On/off light breakpoint**. A level exactly at the
+  breakpoint counts as on.
 
 ## Design limitation
 

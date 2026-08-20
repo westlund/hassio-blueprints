@@ -75,7 +75,9 @@ actually support repeated relative brightness changes:
 - dimmable Wi-Fi, Matter or Thread lights whose integration implements relative
   brightness steps consistently;
 - mixed target groups, provided a continuously dimmable target is selected as
-  reference and the remaining lights accept the final absolute brightness.
+  reference. Dimmable members are synchronized to the final absolute
+  brightness, while pure on/off members use the configured brightness
+  breakpoint for their final state.
 
 Brand or protocol alone does not prove continuous-dimming support. Each exact
 model and integration combination must be tested before it is moved to the
@@ -100,8 +102,15 @@ long-press automations.
 
 - a target group in which no light supports continuous dimming;
 - a mixed-capability group without a reference light;
-- a reference light that does not itself support continuous dimming;
-- non-dimmable targets that cannot accept the final absolute brightness.
+- a reference light that does not itself support continuous dimming.
+
+The blueprint automatically enforces the reference requirement for detected
+pure on/off targets. Other limitations in continuous dimming are not exposed
+as a Home Assistant capability and must be identified during testing.
+
+For mixed configurations, select individual target entities rather than a
+light-group entity. Home Assistant exposes the group to the blueprint as one
+light, so hidden on/off-only members cannot be classified individually.
 
 ## Report a working combination
 

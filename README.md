@@ -9,7 +9,7 @@ committed to the installation's configuration repository.
 
 ### Automation blueprints
 
-#### Universal Magic Button – Helper-Free Dimmer 1.4
+#### Universal Magic Button – Helper-Free Dimmer 1.0.0-beta.1
 
 [`universal_magic_button.yaml`](blueprints/automation/papamike/universal_magic_button.yaml)
 solves a deceptively awkward problem: dimming both up and down with only one
@@ -21,10 +21,14 @@ Users select Home Assistant triggers for short press, optional double press,
 hold and release, so the same integration-independent dimming engine can work
 with MQTT, Zigbee2MQTT, ZHA, deCONZ, Shelly and other integrations. It provides
 configurable press actions, an optional reference light and final
-synchronization of every target light. At least one target light must support
-continuous dimming. A reference light is required only for mixed groups where
-some targets lack that support, and the remote must expose separate events for
-the start and end of a long press.
+synchronization of dimmable target lights. Pure on/off target lights are left
+on or off after dimming according to a configurable brightness breakpoint. At
+least one target light must support continuous dimming. A reference light is
+required only for mixed groups where some targets lack that support, and the
+remote must expose separate events for the start and end of a long press.
+Pure on/off targets are detected automatically. Continuous-dimming behavior in
+other brightness-capable lights must be verified by the user because Home
+Assistant does not expose it as a filterable capability.
 
 See the
 [`complete configuration guide`](blueprints/automation/papamike/universal_magic_button_README.md)

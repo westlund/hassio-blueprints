@@ -1,38 +1,68 @@
 blueprint:
-  name: Universal Magic Button - Helper-Free Dimmer 1.4
+  name: Universal Magic Button - Helper-Free Dimmer 1.0.0-beta.1
   author: Michael Westlund
-  description: >
-    A helper-free, integration-independent button controller. User-selected
-    Home Assistant triggers provide short press, optional double press, hold
-    and release. Short and double press can run custom actions, while hold
-    alternates smooth dimming up and down and synchronizes all target lights
-    when released. At least one target light must support continuous dimming.
-    A remote must expose separate events for the start and end of a hold.
+  description: |-
+    A helper-free, integration-independent controller that lets one physical
+    button toggle and dim one or more lights. Alternate long presses dim up and
+    down; a separate helper is not required to remember the next direction.
+
+    You choose the Home Assistant triggers that mean **short press**, optional
+    **double press**, **hold started** and **hold released**. This makes the
+    blueprint usable with MQTT, Zigbee2MQTT, ZHA, deCONZ, Shelly and other
+    integrations. The remote must report the start and end of a hold as two
+    separate events.
+
+    At least one target must support continuous dimming. On release, dimmable
+    targets are synchronized and pure on/off targets follow a configurable
+    brightness breakpoint.
+
+    [Documentation, compatibility and source code on GitHub](https://github.com/westlund/hassio-blueprints)
   source_url: https://github.com/westlund/hassio-blueprints/blob/main/blueprints/automation/papamike/universal_magic_button.yaml
   domain: automation
   homeassistant:
     min_version: 2024.10.0
   input:
     button:
-      name: Button events
+      name: Remote-control triggers
       icon: mdi:gesture-tap-button
+      description: |-
+        Map the events from your physical button to the blueprint's functions.
+        Home Assistant calls these event definitions **triggers**. The first
+        field starts an action; the second field ends continuous dimming.
+
+        Trigger IDs are internal labels used by this blueprint. They do not
+        need to match the action name reported by the remote.
       collapsed: false
       input:
         action_triggers:
-          name: Press and hold-start triggers
-          description: >
-            Add the button events that start an action. Set each trigger ID to
-            short, double or hold. Double is optional. Several physical events
-            may share the same ID.
+          name: 1. Press actions and hold start
+          description: |-
+            Add one Home Assistant trigger for every function your button
+            provides. Use a device, event, MQTT or other trigger offered for
+            the actual remote. Give each trigger one of these case-sensitive
+            **Trigger IDs** by entering the label in that trigger's
+            **Trigger ID** field:
+
+            - `short` — a normal press; toggles the target lights by default.
+            - `double` — a double press; optional.
+            - `hold` — the event sent when a long press begins.
+
+            Do **not** add the release/stop event here; it belongs in the next
+            field. Advanced use: several triggers may share the same ID, and
+            triggers with other IDs are ignored.
           selector:
             trigger:
         release_trigger:
-          name: Hold-release trigger
-          description: >
-            Select the event emitted when the held button is released. This is
-            monitored only while dimming and does not need a trigger ID. The
-            remote is incompatible if it cannot report hold start and release
-            as separate events.
+          name: 2. Hold release or dimming stop
+          description: |-
+            Add the separate trigger sent when you physically release the held
+            button. Common action names include `hold_release`, `release` and
+            `brightness_stop`, but use the exact event exposed for your remote.
+
+            This trigger needs **no Trigger ID** and is monitored only while
+            dimming. Do not reuse the hold-start event. A remote that reports
+            only a completed long press, without a distinct release/stop event,
+            cannot provide continuous hold-to-dim control with this blueprint.
           selector:
             trigger:
     lights:
@@ -43,8 +73,9 @@ blueprint:
         target_light:
           name: Target lights
           description: >
-            Lights controlled and synchronized by the button. At least one
-            selected light must support continuous dimming.
+            Lights controlled by the button. At least one selected light must
+            support continuous dimming. Select individual entities when a
+            mixed set includes pure on/off lights.
           selector:
             entity:
               multiple: true
@@ -56,7 +87,10 @@ blueprint:
             A continuously dimmable target light that defines the state and
             final brightness for the group. It may be omitted only when every
             target light supports continuous dimming. It is required for a
-            mixed-capability group.
+            mixed-capability group. Home Assistant cannot filter this picker
+            by dimming capability. When a hold starts, the blueprint verifies
+            that the selected entity is a target with reported brightness
+            support. Actual continuous dimming must still be tested.
           default:
           selector:
             entity:
@@ -73,6 +107,20 @@ blueprint:
               max: 40
               step: 1
               unit_of_measurement: "%/s"
+              mode: slider
+        on_off_breakpoint:
+          name: On/off light breakpoint
+          description: >
+            After hold dimming, pure on/off target lights are left on when the
+            resulting brightness is at or above this level. Below it, they are
+            turned off. The setting does not affect dimmable lights.
+          default: 50
+          selector:
+            number:
+              min: 1
+              max: 100
+              step: 1
+              unit_of_measurement: "%"
               mode: slider
     press_actions:
       name: Press actions
@@ -120,6 +168,7 @@ variables:
   target_lights: !input target_light
   reference_light_entity: !input reference_light
   configured_dimming_speed: !input dimming_speed
+  configured_on_off_breakpoint: !input on_off_breakpoint
   configured_short_action: !input short_press_action
   configured_double_action: !input double_press_action
 
@@ -169,12 +218,67 @@ actions:
             id: hold
         sequence:
           - variables:
+              dimmable_target_lights: >-
+                {% set brightness_modes =
+                   ['brightness', 'color_temp', 'hs', 'rgb', 'rgbw', 'rgbww',
+                    'white', 'xy'] %}
+                {% set result = namespace(entities=[]) %}
+                {% for entity in target_lights %}
+                  {% set modes =
+                     (state_attr(entity, 'supported_color_modes') or []) | list %}
+                  {% if modes | select('in', brightness_modes) | list | count > 0 %}
+                    {% set result.entities = result.entities + [entity] %}
+                  {% endif %}
+                {% endfor %}
+                {{ result.entities }}
+              on_off_target_lights: >-
+                {% set result = namespace(entities=[]) %}
+                {% for entity in target_lights %}
+                  {% set modes =
+                     (state_attr(entity, 'supported_color_modes') or []) | list %}
+                  {% if modes | count == 1 and 'onoff' in modes %}
+                    {% set result.entities = result.entities + [entity] %}
+                  {% endif %}
+                {% endfor %}
+                {{ result.entities }}
+              unclassified_target_lights: >-
+                {% set brightness_modes =
+                   ['brightness', 'color_temp', 'hs', 'rgb', 'rgbw', 'rgbww',
+                    'white', 'xy'] %}
+                {% set result = namespace(entities=[]) %}
+                {% for entity in target_lights %}
+                  {% set modes =
+                     (state_attr(entity, 'supported_color_modes') or []) | list %}
+                  {% set is_dimmable =
+                     modes | select('in', brightness_modes) | list | count > 0 %}
+                  {% set is_on_off = modes | count == 1 and 'onoff' in modes %}
+                  {% if not is_dimmable and not is_on_off %}
+                    {% set result.entities = result.entities + [entity] %}
+                  {% endif %}
+                {% endfor %}
+                {{ result.entities }}
+          - if:
+              - condition: template
+                value_template: >-
+                  {{ dimmable_target_lights | count == 0
+                     or unclassified_target_lights | count > 0
+                     or (reference_light_entity and
+                         reference_light_entity not in dimmable_target_lights)
+                     or (on_off_target_lights | count > 0 and
+                         reference_light_entity not in dimmable_target_lights) }}
+            then:
+              - stop: >-
+                  Invalid light configuration: hold dimming requires at least
+                  one dimmable target. A selected reference must be a dimmable
+                  target, and mixed dimmable/on-off targets require one.
+                error: true
+          - variables:
               start_brightness: >-
                 {% if reference_light_entity %}
                   {{ state_attr(reference_light_entity, 'brightness') | int(0) }}
                 {% else %}
                   {% set values = namespace(items=[]) %}
-                  {% for entity in target_lights %}
+                  {% for entity in dimmable_target_lights %}
                     {% set value = state_attr(entity, 'brightness') %}
                     {% if value is number %}
                       {% set values.items = values.items + [value | int] %}
@@ -194,7 +298,7 @@ actions:
               sequence:
                 - action: light.turn_on
                   target:
-                    entity_id: !input target_light
+                    entity_id: "{{ dimmable_target_lights }}"
                   data:
                     brightness_step_pct: "{{ dim_step }}"
                     transition: 0.5
@@ -207,7 +311,7 @@ actions:
                   value_template: "{{ wait.trigger is not none }}"
           - action: light.turn_on
             target:
-              entity_id: !input target_light
+              entity_id: "{{ dimmable_target_lights }}"
             data:
               brightness_step: 0
           - delay:
@@ -218,7 +322,7 @@ actions:
                   {{ state_attr(reference_light_entity, 'brightness') | int(2) }}
                 {% else %}
                   {% set values = namespace(items=[]) %}
-                  {% for entity in target_lights %}
+                  {% for entity in dimmable_target_lights %}
                     {% set value = state_attr(entity, 'brightness') %}
                     {% if value is number %}
                       {% set values.items = values.items + [value | int] %}
@@ -227,6 +331,7 @@ actions:
                   {{ ((values.items | sum) / (values.items | count)) | round(0) | int
                      if values.items else 2 }}
                 {% endif %}
+          - variables:
               encoded_brightness: >-
                 {% if dim_direction == 'up' %}
                   {{ [final_brightness + (1 if final_brightness % 2 == 0 else 0), 255] | min }}
@@ -234,11 +339,30 @@ actions:
                   {{ 2 if final_brightness <= 2 else
                      final_brightness - (1 if final_brightness % 2 == 1 else 0) }}
                 {% endif %}
+              on_off_should_be_on: >-
+                {{ (final_brightness | float(0)) * 100 / 255
+                   >= configured_on_off_breakpoint | float(50) }}
           - action: light.turn_on
             target:
-              entity_id: !input target_light
+              entity_id: "{{ dimmable_target_lights }}"
             data:
               brightness: "{{ encoded_brightness }}"
+          - if:
+              - condition: template
+                value_template: "{{ on_off_target_lights | count > 0 }}"
+            then:
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ on_off_should_be_on }}"
+                    sequence:
+                      - action: light.turn_on
+                        target:
+                          entity_id: "{{ on_off_target_lights }}"
+                default:
+                  - action: light.turn_off
+                    target:
+                      entity_id: "{{ on_off_target_lights }}"
 
 mode: single
 max_exceeded: silent
