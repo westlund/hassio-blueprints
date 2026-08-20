@@ -1,5 +1,5 @@
 blueprint:
-  name: Aqara Magic Button - Helper-Free Dimmer for Zigbee2MQTT v1.2
+  name: Aqara Magic Button - Helper-Free Dimmer for Zigbee2MQTT v1.3
   description: >
     A helper-free one-button light controller with toggle, configurable double
     press and alternating up/down dimming. After a configurable period of
@@ -21,8 +21,10 @@ blueprint:
     reference_light:
       name: Reference light (optional)
       description: >
-        A target light that acts as the state reference for the entire group.
-        When omitted, the target lights are handled together automatically.
+        A target light that is dimmed continuously and acts as the state
+        reference for the entire group. When dimming stops, all target lights
+        are synchronized to its level. When omitted, the target lights are
+        dimmed and handled together automatically.
       default:
       selector:
         entity:
@@ -59,6 +61,17 @@ blueprint:
           step: 50
           unit_of_measurement: K
           mode: slider
+    dimming_speed:
+      name: Dimming speed
+      description: Brightness change per second while the button is held.
+      default: 10
+      selector:
+        number:
+          min: 2
+          max: 40
+          step: 1
+          unit_of_measurement: "%/s"
+          mode: slider
     reset_direction_after_inactivity:
       name: Reset dimming direction after inactivity
       description: >
@@ -84,6 +97,7 @@ variables:
   target_lights: !input target_light
   reference_light_entity: !input reference_light
   reset_direction: !input reset_direction_after_inactivity
+  configured_dimming_speed: !input dimming_speed
 
 triggers:
   - trigger: mqtt
@@ -147,12 +161,16 @@ actions:
                 {{ 'down' if start_brightness > 0 and start_brightness % 2 == 1
                    else 'up' }}
           - variables:
-              dim_step: "{{ -5 if dim_direction == 'down' else 5 }}"
+              dim_step: >-
+                {{ ((configured_dimming_speed | float) / 2) *
+                   (-1 if dim_direction == 'down' else 1) }}
           - repeat:
               sequence:
                 - action: light.turn_on
                   target:
-                    entity_id: !input target_light
+                    entity_id: >-
+                      {{ [reference_light_entity] if reference_light_entity
+                         else target_lights }}
                   data:
                     brightness_step_pct: "{{ dim_step }}"
                     transition: 0.5
@@ -168,7 +186,9 @@ actions:
                   value_template: "{{ wait.trigger is not none }}"
           - action: light.turn_on
             target:
-              entity_id: !input target_light
+              entity_id: >-
+                {{ [reference_light_entity] if reference_light_entity
+                   else target_lights }}
             data:
               brightness_step: 0
           - delay:
@@ -198,8 +218,7 @@ actions:
                 {% endif %}
           - action: light.turn_on
             target:
-              entity_id: >-
-                {{ reference_light_entity if reference_light_entity else target_lights }}
+              entity_id: !input target_light
             data:
               brightness: "{{ encoded_brightness }}"
 

@@ -9,7 +9,7 @@ committed to the installation's configuration repository.
 
 ### Automation blueprints
 
-#### Aqara Magic Button – Helper-Free Dimmer for Zigbee2MQTT 1.2
+#### Aqara Magic Button – Helper-Free Dimmer for Zigbee2MQTT 1.3
 
 [`aqara_wireless_mini_switch.yaml`](blueprints/automation/papamike/aqara_wireless_mini_switch.yaml)
 turns an Aqara one-button remote into a compact light controller. It listens to
@@ -20,13 +20,17 @@ the configured Zigbee2MQTT action topic and can control one or more lights:
   temperature (67% and 2700 K by default);
 - hold alternates between increasing and decreasing brightness;
 - release stops dimming and remembers the direction for the next hold;
+- with a reference light, only that light is continuously dimmed and all target
+  lights are synchronized to its final level on release;
 - after a configurable inactivity delay, a new session always starts by
   increasing brightness.
 
 Inputs: Zigbee2MQTT action topic, target light entities, optional reference
 light, double-press brightness and color temperature, direction-reset switch
-and inactivity timeout (10 seconds by default). The optional reference light
-coordinates the group state. No helper entity is required.
+and inactivity timeout (10 seconds by default), plus dimming speed (10% per
+second by default). The optional reference light coordinates the group state
+and allows lights without smooth step dimming to follow its final level. No
+helper entity is required.
 
 #### Discreet Volume Limiter (beta)
 
