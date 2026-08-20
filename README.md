@@ -1,3 +1,27 @@
-# hassio-blueprints
+# Home Assistant blueprints
 
-This is a collectiopn blueprints that I have created for my own Home Assistant installations. My ambition is to share them - and keep sharing them - and do so with constant variable names so they can be updated without breaking. However, I do not guarantee that I won't change anything or that I won't do any mistakes. The [LICENSE](https://raw.githubusercontent.com/westlund/hassio-blueprints/refs/heads/main/LICENSE) file applies to everything in this repository.
+Blueprints created and maintained by Michael Westlund for personal Home
+Assistant installations. The repository is the source of truth; the copies in
+each Home Assistant configuration are installed artifacts and should not be
+committed to the installation's configuration repository.
+
+## Contents
+
+- `blueprints/automation/papamike/` – automation blueprints
+- `blueprints/script/papamike/` – script blueprints
+
+## Install or update on Home Assistant OS
+
+Clone or update this repository outside `/homeassistant`, then run:
+
+```sh
+sudo ./sync-to-home-assistant.sh /homeassistant
+```
+
+The script copies only the blueprints maintained by this repository. It does
+not remove imported blueprints from Home Assistant.
+
+Run Home Assistant's configuration check after updating and reload the affected
+automations or restart Home Assistant when appropriate.
+
+The [LICENSE](LICENSE) applies to everything in this repository.

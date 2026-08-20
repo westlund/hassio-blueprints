@@ -1,0 +1,140 @@
+blueprint:
+  name: Aqara Wireless Mini Switch for use with Zigbee2MQTT v1.0
+  description: One-button dimmer automation using Aqara Wireless Mini Switch with Z2igbee2MQTT
+  author: Michael Westlund
+  domain: automation
+  input:
+    button_action:
+      name: Button MQTT topic
+      description: 'Button MQTT topic (i.e. zigbee2mqtt/Bedroom Button/action). Replace Bedroom button with its friendly name.'
+      default: 'zigbee2mqtt/Bedroom Button/action'
+      selector:
+        text:
+    target_light:
+      name: Light(s) to control
+      description: 'Which light(s) to control'
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: light
+
+trigger:
+  - platform: mqtt
+    topic: !input button_action
+    payload: single
+    id: single
+  - platform: mqtt
+    topic: !input button_action
+    payload: double
+    id: double
+  - platform: mqtt
+    topic: !input button_action
+    id: hold
+    payload: hold
+  - platform: mqtt
+    topic: !input button_action
+    payload: release
+    id: release
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: single
+        sequence:
+          - service: light.toggle
+            data:
+              transition: 0.5
+            target:
+              entity_id:
+                !input target_light
+      - conditions:
+          - condition: trigger
+            id: double
+        sequence:
+          - service: light.turn_on
+            data:
+              transition: 0.5
+              kelvin: 3400
+              brightness_pct: 67
+            target:
+              entity_id:
+                !input target_light
+      - conditions:
+          - condition: trigger
+            id: hold
+        sequence:
+          - repeat:
+              while:
+                - condition: trigger
+                  id: hold
+              sequence:
+                - service: light.turn_on
+                  data:
+                    brightness_step_pct: 5
+                    transition: 0.5
+                  target:
+                    entity_id:
+                      !input target_light
+                - delay:
+                    hours: 0
+                    minutes: 0
+                    seconds: 0
+                    milliseconds: 500
+      - conditions:
+          - condition: trigger
+            id: release
+        sequence:
+          - service: light.turn_on
+            data:
+              brightness_step: 0
+            target:
+              entity_id:
+                !input target_light
+mode: restart
+
+
+# action:
+#   - choose:
+#       - conditions:
+#           - condition: trigger
+#             id: dimmer_on
+#         sequence:
+#           !input action_on_press
+#       - conditions:
+#           - condition: trigger
+#             id: dimmer_off
+#         sequence:
+#           !input action_off_press
+#       - conditions:
+#           - condition: trigger
+#             id: dimmer_up
+#         sequence:
+#           !input action_up_press
+#       - conditions:
+#           - condition: trigger
+#             id: dimmer_down
+#         sequence:
+#           !input action_down_press
+#       - conditions:
+#           - condition: trigger
+#             id: dimmer_on_hold
+#         sequence:
+#           !input action_on_hold
+#       - conditions:
+#           - condition: trigger
+#             id: dimmer_off_hold
+#         sequence:
+#           !input action_off_hold
+#       - conditions:
+#           - condition: trigger
+#             id: dimmer_up_hold
+#         sequence:
+#           !input action_up_hold
+#       - conditions:
+#           - condition: trigger
+#             id: dimmer_down_hold
+#         sequence:
+#           !input action_down_hold
+#     default: []

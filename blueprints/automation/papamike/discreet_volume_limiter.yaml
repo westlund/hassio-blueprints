@@ -1,0 +1,73 @@
+blueprint:
+  name: Discreet Volume Limiter BETA
+  domain: automation
+  input:
+    media_player_entity_selector:
+      name: Media player
+      description: Media player to control
+      selector:
+        entity:
+          multiple: false
+          filter:
+            - domain: media_player
+    volume_limit_bp_selector:
+      name: Max volume
+      description: Select the max volume limit if you want the automation to keep track of it for you.
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+      default: 20
+    volume_limit_switch_helper_selector:
+      name: "A input_boolean helper that turns the limiter on or off."
+      description: "Select an input_number helper entity if you want to use it to enable/disable the automation rather than enabling/disabling the automation itself.\n**You will have to create the input_boolean helper yourself!**"
+      selector:
+        entity:
+          multiple: false
+          filter:
+            - domain: input_boolean
+      default:
+    volume_limit_helper_selector:
+      name: Max volume helper entity
+      description: Set the max volume using an input_number helper. **Leave empty if you want to use the bueprint slider** to control the volume limit.
+      selector:
+        entity:
+          multiple: false
+          filter:
+            - domain: input_number
+      default:
+
+variables:
+  media_player_entity: !input media_player_entity_selector
+  volume_limit_bp: !input volume_limit_bp_selector
+  volume_limit_switch_helper: !input volume_limit_switch_helper_selector
+  volume_limit_helper: !input volume_limit_helper_selector
+  volume_limit_enabled: True
+
+trigger:
+  - platform: state
+    entity_id: !input media_player_entity_selector
+    attribute: volume_level
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 5
+
+condition:
+  - condition: template
+    value_template: '{{ volume_limit_enabled == True }}'
+
+action:
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
+  - service: media_player.volume_down
+    data: {}
+    target:
+      entity_id: !input media_player_entity_selector
+    enabled: false
+mode: single

@@ -1,0 +1,53 @@
+blueprint:
+  name: MyNotifier Plus
+  #description: Send a notification to any notify.* service (including notify.mobile_app_*).
+  domain: script
+
+  input:
+    notify_target:
+      name: Device to notify
+      description: Device needs to run the official Home Assistant app to receive notifications.
+      selector:
+        device:
+          integration: mobile_app
+
+    m_priority:
+      name: Priority
+      default: active
+      selector:
+        select:
+          options:
+            - passive
+            - active
+            - time-sensitive
+            - critical
+
+    m_title:
+      name: Title
+      default: ""
+      selector:
+        text: {}
+
+    m_text:
+      name: Message
+      selector:
+        text:
+          multiline: true
+
+mode: queued
+max: 10
+
+sequence:
+  - variables:
+      target: !input notify_target
+
+  # Call the selected notify service
+  - service: notify.notify
+    data:
+      title: !input m_title
+      message: !input m_text
+      data:
+        push:
+          #interruption-level: !input m_priority
+          badge: 2
+      target: "{{ target }}"
