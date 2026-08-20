@@ -1,5 +1,5 @@
 blueprint:
-  name: Discreet Volume Limiter BETA
+  name: Volume Nudge BETA
   domain: automation
   input:
     media_player_entity_selector:

@@ -68,10 +68,10 @@ second by default). The optional reference light coordinates the group state
 and defines the final group level. Lights without smooth step dimming can still
 follow when the final absolute level is applied. No helper entity is required.
 
-#### Discreet Volume Limiter (beta)
+#### Volume Nudge (beta)
 
-[`discreet_volume_limiter.yaml`](blueprints/automation/papamike/discreet_volume_limiter.yaml)
-is intended to monitor a media player's volume and gently bring it below a
+[`volume_nudge.yaml`](blueprints/automation/papamike/volume_nudge.yaml) is
+intended to monitor a media player's volume and gently bring it below a
 configured ceiling. It provides inputs for a fixed maximum volume, an optional
 `input_number` limit and an optional `input_boolean` enable switch.
 
