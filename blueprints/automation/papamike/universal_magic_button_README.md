@@ -1,0 +1,137 @@
+# Universal Magic Button – Helper-Free Dimmer
+
+`universal_magic_button.yaml` is an integration-independent Home Assistant
+automation blueprint for one-button light control. Home Assistant's own trigger
+editor connects the blueprint to the selected remote, so the dimming logic does
+not need to know whether the event originates from MQTT, Zigbee2MQTT, ZHA,
+deCONZ or another integration.
+
+## Features
+
+- Short press toggles all target lights by default.
+- Double press is optional and defaults to 67% brightness at 2700 K.
+- Short and double press can each be replaced with arbitrary Home Assistant
+  actions.
+- Hold alternates between dimming upwards and downwards without a helper.
+- Repeated hold messages are ignored for the duration of the physical hold.
+- Release stops dimming and synchronizes every target light to the reference
+  light or calculated group level.
+- Lights that do not follow smooth relative dimming are corrected to the final
+  absolute brightness when the button is released.
+
+## Requirements
+
+- Home Assistant 2024.10.0 or newer.
+- At least one light entity.
+- A button integration that exposes a hold-start event and a corresponding
+  release or stop event for continuous dimming.
+
+A remote without hold and release can still be used for short and double press,
+but it cannot provide continuous dimming through this blueprint.
+
+## Configuration
+
+### 1. Select action triggers
+
+In **Press and hold-start triggers**, add the device or event triggers exposed
+by Home Assistant. Open each trigger's settings and assign exactly one of these
+trigger IDs:
+
+| Trigger ID | Meaning | Required |
+|---|---|---|
+| `short` | Short or single press | Yes for toggle/custom short action |
+| `double` | Double press | No |
+| `hold` | Start of a long press | Yes for continuous dimming |
+
+Trigger IDs are case-sensitive. Unknown or missing IDs are ignored safely.
+Several triggers may use the same ID, allowing multiple buttons or event forms
+to invoke the same function.
+
+### 2. Select the release trigger
+
+In **Hold-release trigger**, select the event emitted when the held button is
+released. It does not need a trigger ID. The blueprint monitors this event only
+while a dimming session is active.
+
+Separating release from the main trigger list is intentional. It ensures that
+repeated hold messages cannot restart the automation or reverse direction.
+
+### 3. Select lights
+
+Choose one or more target lights. A reference light is optional. When selected,
+it determines the initial direction and final level for the group. Otherwise,
+the blueprint calculates a level from the target lights that report brightness.
+
+All selected lights receive every dimming attempt. At release, all lights are
+set to the final absolute brightness so a less capable group member can catch
+up with the reference light.
+
+### 4. Configure press actions
+
+If **Custom short-press action** is empty, short press toggles the target lights.
+If **Custom double-press action** is empty, double press turns them on using the
+configured brightness and color temperature. Supplying custom actions replaces
+the corresponding default completely.
+
+## Example event mappings
+
+Exact event names depend on device model, firmware and integration. Always use
+the events Home Assistant offers for the actual device.
+
+### Philips Hue Dimmer through Zigbee2MQTT/MQTT device triggers
+
+| Function | Device action | Trigger ID |
+|---|---|---|
+| Short press | `up_press_release` | `short` |
+| Hold start | `up_hold` | `hold` |
+| Release | `up_hold_release` | none |
+
+Hue Dimmer does not normally expose a distinct double-press device action.
+
+### IKEA RODRET through Zigbee2MQTT
+
+Typical action values are `on`, `off`, `brightness_move_up`,
+`brightness_move_down` and `brightness_stop`. Choose one physical button for
+the magic-button behavior; for example, use `on` as `short`,
+`brightness_move_up` as `hold`, and `brightness_stop` as release.
+
+### Aqara Wireless Mini Switch through Zigbee2MQTT
+
+Models that expose `single`, `double`, `hold` and `release` map directly to the
+corresponding functions. Some Aqara variants expose multiple click counts but
+no hold/release and therefore cannot provide continuous dimming.
+
+## Execution and direction
+
+The automation uses `single` mode. Once a hold starts, additional start events
+are ignored until release. This is required for remotes that repeat their hold
+message while the button remains down.
+
+The next direction is carried without a separate Home Assistant helper. The
+public description intentionally treats this as an implementation detail.
+Direction alternates between completed holds; this version does not reset the
+direction after an inactivity timeout.
+
+## Troubleshooting
+
+- Nothing happens: verify that each action trigger has the exact ID `short`,
+  `double` or `hold`.
+- Dimming never stops: the selected release event does not match what the
+  device sends. Observe the device's available automation triggers or event
+  stream and select the matching release/stop event.
+- A hold is interpreted as a short press: some integrations emit a release
+  event that represents both actions. Choose a dedicated short-press event if
+  the device provides one.
+- Double press also runs short press: the device is reporting two independent
+  short presses rather than a native double event. Leave double unconfigured or
+  use an integration/device profile that exposes double press distinctly.
+- Lights end at slightly different levels: select the most reliable dimmable
+  target as the reference light.
+
+## Design limitation
+
+A blueprint cannot currently inspect a selected device and dynamically create
+the correct integration-specific triggers. Device event vocabularies also vary
+between MQTT, ZHA and deCONZ. User-selected Home Assistant triggers are therefore
+the stable compatibility boundary and avoid a permanently maintained table of
+device models and payload names.

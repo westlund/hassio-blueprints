@@ -9,6 +9,20 @@ committed to the installation's configuration repository.
 
 ### Automation blueprints
 
+#### Universal Magic Button – Helper-Free Dimmer 1.0
+
+[`universal_magic_button.yaml`](blueprints/automation/papamike/universal_magic_button.yaml)
+is the integration-independent successor to the device-specific magic-button
+experiments. Users select Home Assistant triggers for short press, optional
+double press, hold and release, so the same dimming engine can work with MQTT,
+Zigbee2MQTT, ZHA, deCONZ and other integrations. It provides configurable press
+actions, alternating helper-free continuous dimming, an optional reference
+light and final synchronization of every target light.
+
+See the
+[`complete configuration guide`](blueprints/automation/papamike/universal_magic_button_README.md)
+for requirements, trigger IDs, example mappings and troubleshooting.
+
 #### Aqara Magic Button – Helper-Free Dimmer for Zigbee2MQTT 1.4
 
 [`aqara_wireless_mini_switch.yaml`](blueprints/automation/papamike/aqara_wireless_mini_switch.yaml)

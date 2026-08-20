@@ -1,0 +1,237 @@
+blueprint:
+  name: Universal Magic Button - Helper-Free Dimmer 1.0
+  author: Michael Westlund
+  description: >
+    A helper-free, integration-independent button controller. User-selected
+    Home Assistant triggers provide short press, optional double press, hold
+    and release. Short and double press can run custom actions, while hold
+    alternates smooth dimming up and down and synchronizes all target lights
+    when released.
+  source_url: https://github.com/westlund/hassio-blueprints/blob/main/blueprints/automation/papamike/universal_magic_button.yaml
+  domain: automation
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    button:
+      name: Button events
+      icon: mdi:gesture-tap-button
+      collapsed: false
+      input:
+        action_triggers:
+          name: Press and hold-start triggers
+          description: >
+            Add the button events that start an action. Set each trigger ID to
+            short, double or hold. Double is optional. Several physical events
+            may share the same ID.
+          selector:
+            trigger:
+        release_trigger:
+          name: Hold-release trigger
+          description: >
+            Select the event emitted when the held button is released. This is
+            monitored only while dimming and does not need a trigger ID.
+          selector:
+            trigger:
+    lights:
+      name: Lights and dimming
+      icon: mdi:lightbulb-on-outline
+      collapsed: false
+      input:
+        target_light:
+          name: Target lights
+          description: Lights controlled and synchronized by the button.
+          selector:
+            entity:
+              multiple: true
+              filter:
+                domain: light
+        reference_light:
+          name: Reference light (optional)
+          description: >
+            A target light that defines the state and final brightness for the
+            group. When omitted, the average available brightness is used.
+          default:
+          selector:
+            entity:
+              multiple: false
+              filter:
+                domain: light
+        dimming_speed:
+          name: Dimming speed
+          description: Brightness change per second while the button is held.
+          default: 10
+          selector:
+            number:
+              min: 2
+              max: 40
+              step: 1
+              unit_of_measurement: "%/s"
+              mode: slider
+    press_actions:
+      name: Press actions
+      icon: mdi:gesture-double-tap
+      collapsed: true
+      input:
+        short_press_action:
+          name: Custom short-press action (optional)
+          description: >
+            Actions to run on short press. When empty, the target lights are
+            toggled with a short transition.
+          default: []
+          selector:
+            action:
+        double_press_action:
+          name: Custom double-press action (optional)
+          description: >
+            Actions to run on double press. When empty, the target lights use
+            the brightness and color temperature configured below.
+          default: []
+          selector:
+            action:
+        double_press_brightness:
+          name: Default double-press brightness
+          default: 67
+          selector:
+            number:
+              min: 1
+              max: 100
+              step: 1
+              unit_of_measurement: "%"
+              mode: slider
+        double_press_color_temperature:
+          name: Default double-press color temperature
+          default: 2700
+          selector:
+            number:
+              min: 2000
+              max: 6500
+              step: 50
+              unit_of_measurement: K
+              mode: slider
+
+variables:
+  target_lights: !input target_light
+  reference_light_entity: !input reference_light
+  configured_dimming_speed: !input dimming_speed
+  configured_short_action: !input short_press_action
+  configured_double_action: !input double_press_action
+
+triggers:
+  - triggers: !input action_triggers
+
+conditions:
+  - condition: template
+    value_template: "{{ trigger.id in ['short', 'double', 'hold'] }}"
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: short
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ configured_short_action | count > 0 }}"
+            then: !input short_press_action
+            else:
+              - action: light.toggle
+                target:
+                  entity_id: !input target_light
+                data:
+                  transition: 0.5
+
+      - conditions:
+          - condition: trigger
+            id: double
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ configured_double_action | count > 0 }}"
+            then: !input double_press_action
+            else:
+              - action: light.turn_on
+                target:
+                  entity_id: !input target_light
+                data:
+                  transition: 0.5
+                  brightness_pct: !input double_press_brightness
+                  color_temp_kelvin: !input double_press_color_temperature
+
+      - conditions:
+          - condition: trigger
+            id: hold
+        sequence:
+          - variables:
+              start_brightness: >-
+                {% if reference_light_entity %}
+                  {{ state_attr(reference_light_entity, 'brightness') | int(0) }}
+                {% else %}
+                  {% set values = namespace(items=[]) %}
+                  {% for entity in target_lights %}
+                    {% set value = state_attr(entity, 'brightness') %}
+                    {% if value is number %}
+                      {% set values.items = values.items + [value | int] %}
+                    {% endif %}
+                  {% endfor %}
+                  {{ ((values.items | sum) / (values.items | count)) | round(0) | int
+                     if values.items else 0 }}
+                {% endif %}
+          - variables:
+              dim_direction: >-
+                {{ 'down' if start_brightness > 0 and start_brightness % 2 == 1
+                   else 'up' }}
+              dim_step: >-
+                {{ ((configured_dimming_speed | float) / 2) *
+                   (-1 if dim_direction == 'down' else 1) }}
+          - repeat:
+              sequence:
+                - action: light.turn_on
+                  target:
+                    entity_id: !input target_light
+                  data:
+                    brightness_step_pct: "{{ dim_step }}"
+                    transition: 0.5
+                - wait_for_trigger: !input release_trigger
+                  timeout:
+                    milliseconds: 500
+                  continue_on_timeout: true
+              until:
+                - condition: template
+                  value_template: "{{ wait.trigger is not none }}"
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_step: 0
+          - delay:
+              milliseconds: 300
+          - variables:
+              final_brightness: >-
+                {% if reference_light_entity %}
+                  {{ state_attr(reference_light_entity, 'brightness') | int(2) }}
+                {% else %}
+                  {% set values = namespace(items=[]) %}
+                  {% for entity in target_lights %}
+                    {% set value = state_attr(entity, 'brightness') %}
+                    {% if value is number %}
+                      {% set values.items = values.items + [value | int] %}
+                    {% endif %}
+                  {% endfor %}
+                  {{ ((values.items | sum) / (values.items | count)) | round(0) | int
+                     if values.items else 2 }}
+                {% endif %}
+              encoded_brightness: >-
+                {% if dim_direction == 'up' %}
+                  {{ [final_brightness + (1 if final_brightness % 2 == 0 else 0), 255] | min }}
+                {% else %}
+                  {{ 2 if final_brightness <= 2 else
+                     final_brightness - (1 if final_brightness % 2 == 1 else 0) }}
+                {% endif %}
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness: "{{ encoded_brightness }}"
+
+mode: single
+max_exceeded: silent
