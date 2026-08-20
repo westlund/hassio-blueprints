@@ -12,10 +12,25 @@ verified until someone has tested the complete hold-to-dim and release flow.
 | Remote | Integration | Short trigger | Hold trigger | Release trigger | Result |
 |---|---|---|---|---|---|
 | Philips Hue Dimmer Switch gen 1, model `324131092621` | Zigbee2MQTT through Home Assistant MQTT device triggers | `up_press_release` (`short`) | `up_hold` (`hold`) | `up_hold_release` | Verified |
+| Philips Hue Dimmer Switch gen 2, model `929002398602` | Zigbee2MQTT through Home Assistant MQTT device triggers | `up_press_release` (`short`) | `up_hold` (`hold`) | `up_hold_release` | Verified |
 
 The Hue test uses the physical brightness-up button. Zigbee2MQTT may emit
 repeated `up_hold` actions during one physical hold; the blueprint correctly
 ignores those additional starts until release.
+
+Both Hue generations expose matching press, hold and release actions for all
+four physical buttons. Four separate instances of the same blueprint can
+therefore assign the four buttons to four different lights or light groups.
+
+| Physical button | Gen 1 candidate actions | Gen 2 candidate actions |
+|---|---|---|
+| First/power | `on_press_release`, `on_hold`, `on_hold_release` | `on_press_release`, `on_hold`, `on_hold_release` |
+| Brightness up | `up_press_release`, `up_hold`, `up_hold_release` | `up_press_release`, `up_hold`, `up_hold_release` |
+| Brightness down | `down_press_release`, `down_hold`, `down_hold_release` | `down_press_release`, `down_hold`, `down_hold_release` |
+| Fourth/off or Hue button | `off_press_release`, `off_hold`, `off_hold_release` | `off_press_release`, `off_hold`, `off_hold_release` |
+
+The brightness-up mappings are verified. Test and report the other three
+buttons before treating the complete four-group arrangement as verified.
 
 ### Lights
 
@@ -37,9 +52,9 @@ integration and device-generation differences can still affect the result.
 
 | Remote | Integration | Candidate short | Candidate hold | Candidate release | Status |
 |---|---|---|---|---|---|
-| Philips Hue Dimmer Switch gen 2, `929002398602` | Zigbee2MQTT/MQTT | `up_press_release` | `up_hold` | `up_hold_release` | Expected |
 | IKEA RODRET, `E2201` | Zigbee2MQTT/MQTT | `on` or `off` | `brightness_move_up` or `brightness_move_down` | `brightness_stop` | Expected |
 | Aqara Wireless Mini Switch, `WXKG11LM`, variants that expose hold and release | Zigbee2MQTT/MQTT | `single` | `hold` | `release` | Expected, variant-dependent |
+| Shelly Plus 1 or Plus 2PM, generation 2 | Native Home Assistant Shelly integration, input mode `Button` | `single_push` | `long_push` | `btn_up` | Expected; `double_push` can be mapped to `double` |
 
 Equivalent device triggers exposed by ZHA or deCONZ should also work when they
 provide distinct short, hold-start and hold-release events. Their exact event
@@ -67,6 +82,7 @@ verified table.
 | Remote or category | Integration | Exposed actions | Reason |
 |---|---|---|---|
 | SONOFF SNZB-01P | Zigbee2MQTT/MQTT | `single`, `double`, `long` | No separate hold-start and release/stop action |
+| Shelly generation 1 using only native click events | Native Home Assistant Shelly integration | `single`, `double`, `long` and related completed-click events | No distinct release event in this event set; a separately verified raw-input solution would be required |
 | Aqara `WXKG11LM` variants that expose click counts but no `hold` and `release` | Any | Typically `single`, `double`, `triple`, `quadruple` | Model name alone is insufficient; these variants cannot stop continuous dimming |
 | Any remote that reports a long press only after the button is released | Any | One completed-long-press event | Continuous dimming cannot start while the button is held |
 | Any remote without a distinct release or stop event | Any | Hold without release/stop | The blueprint cannot determine when to stop dimming |

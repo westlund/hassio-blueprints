@@ -1,5 +1,15 @@
 # Universal Magic Button – Helper-Free Dimmer
 
+## The challenge
+
+How do you dim lights both up and down with only one button—and implement that
+behavior in Home Assistant without a helper?
+
+This blueprint provides a simple solution: alternate long presses dim up and
+down. No separate helper needs to be created, configured or maintained. Short
+press toggles the lights by default, while an optional double press can apply a
+favorite light setting or run any other Home Assistant action.
+
 `universal_magic_button.yaml` is an integration-independent Home Assistant
 automation blueprint for one-button light control. Home Assistant's own trigger
 editor connects the blueprint to the selected remote, so the dimming logic does
@@ -121,6 +131,31 @@ in the compatibility catalogue have been tested end to end.
 | Release | `up_hold_release` | none |
 
 Hue Dimmer does not normally expose a distinct double-press device action.
+
+Both Hue Dimmer generation 1 and generation 2 have dedicated brightness-up and
+brightness-down buttons. This blueprint makes a different arrangement possible:
+create four automation instances from the same blueprint and map one physical
+button to each instance. Each button can then control its own light or light
+group with short press and alternating hold dimming.
+
+For example, the four buttons can control ceiling, window, reading and accent
+lights independently. Replacement symbols can be placed over the original Hue
+symbols so the remote clearly shows the four new destinations. Each automation
+must use that button's matching press, hold and release actions; see the Hue
+profiles in the compatibility catalogue.
+
+### Shelly Plus 1 or Plus 2PM through the native Shelly integration
+
+Configure the connected momentary input as **Button**. Home Assistant then
+creates an event entity and exposes generation 2 button events. A candidate
+mapping is `single_push` as `short`, `double_push` as optional `double`,
+`long_push` as `hold`, and `btn_up` as release.
+
+This Shelly profile is expected to work but has not yet been verified with the
+blueprint. Confirm the exact events exposed by the device and firmware in Home
+Assistant before creating the automation. Generation 1 `single` and `long`
+click events alone are insufficient because they do not provide a distinct
+release event.
 
 ### IKEA RODRET through Zigbee2MQTT
 
