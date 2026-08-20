@@ -9,7 +9,7 @@ committed to the installation's configuration repository.
 
 ### Automation blueprints
 
-#### Universal Magic Button – Helper-Free Dimmer 1.1
+#### Universal Magic Button – Helper-Free Dimmer 1.2
 
 [`universal_magic_button.yaml`](blueprints/automation/papamike/universal_magic_button.yaml)
 is the integration-independent successor to the device-specific magic-button
@@ -24,7 +24,12 @@ separate events for the start and end of a long press.
 
 See the
 [`complete configuration guide`](blueprints/automation/papamike/universal_magic_button_README.md)
-for requirements, trigger IDs, example mappings and troubleshooting.
+for requirements, trigger IDs, example mappings and troubleshooting. The
+separate
+[`compatibility catalogue`](blueprints/automation/papamike/universal_magic_button_COMPATIBILITY.md)
+distinguishes verified combinations from devices that should work or are known
+to be unsupported, and explains how to report exact action names from new
+successful tests.
 
 #### Aqara Magic Button – Helper-Free Dimmer for Zigbee2MQTT 1.4
 

@@ -41,6 +41,21 @@ capability that a blueprint selector can filter reliably across integrations.
 The user must therefore verify these requirements when choosing target and
 reference lights.
 
+## Tested and expected compatibility
+
+The blueprint is verified with a Philips Hue Dimmer Switch gen 1 through
+Zigbee2MQTT/MQTT and two Philips Hue light models. Other remotes and lights are
+listed separately as **expected** until their complete action sequence has been
+tested. Devices without distinct hold-start and release/stop events are listed
+as unsupported.
+
+See the
+[`compatibility catalogue`](universal_magic_button_COMPATIBILITY.md) for exact
+models, action names, known limitations and instructions for reporting a new
+working combination. Reports should include the precise Home Assistant action
+or trigger names; product name alone is not enough because device generations,
+firmware and integrations can expose different events.
+
 ## Configuration
 
 ### 1. Select action triggers
@@ -93,6 +108,9 @@ the corresponding default completely.
 
 Exact event names depend on device model, firmware and integration. Always use
 the events Home Assistant offers for the actual device.
+
+These examples describe expected mappings. Only combinations marked verified
+in the compatibility catalogue have been tested end to end.
 
 ### Philips Hue Dimmer through Zigbee2MQTT/MQTT device triggers
 
