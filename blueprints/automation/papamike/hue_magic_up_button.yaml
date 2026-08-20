@@ -1,0 +1,236 @@
+blueprint:
+  name: Hue Magic Up Button - Helper-Free Dimmer 1.0
+  description: >
+    A helper-free temporary one-button light controller for the up button on a
+    Philips Hue Dimmer Switch. A short press toggles the selected lights. Hold
+    alternates between increasing and decreasing brightness, and release stops
+    dimming and synchronizes all target lights. After a configurable period of
+    inactivity, a new dimming session can always start upwards.
+  author: Michael Westlund
+  source_url: https://github.com/westlund/hassio-blueprints/blob/main/blueprints/automation/papamike/hue_magic_up_button.yaml
+  domain: automation
+  homeassistant:
+    min_version: 2024.6.0
+  input:
+    dimmer_device:
+      name: Hue Dimmer device
+      description: A Philips Hue Dimmer Switch v1 or v2 connected through MQTT.
+      selector:
+        device:
+          filter:
+            - manufacturer: Philips
+              model_id: "324131092621"
+            - manufacturer: Philips
+              model_id: "929002398602"
+    target_light:
+      name: Target lights
+      description: Dimmable lights controlled by the up button.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: light
+    reference_light:
+      name: Reference light (optional)
+      description: >
+        A target light that defines the state and final level for the group.
+        When omitted, the target lights are handled together automatically.
+      default:
+      selector:
+        entity:
+          multiple: false
+          filter:
+            domain: light
+    dimming_speed:
+      name: Dimming speed
+      description: Brightness change per second while the button is held.
+      default: 10
+      selector:
+        number:
+          min: 2
+          max: 40
+          step: 1
+          unit_of_measurement: "%/s"
+          mode: slider
+    reset_direction_after_inactivity:
+      name: Reset dimming direction after inactivity
+      description: When enabled, a new session always starts by dimming upwards.
+      default: true
+      selector:
+        boolean:
+    inactivity_timeout:
+      name: Inactivity timeout
+      description: Seconds before the dimming direction resets to upwards.
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 300
+          step: 1
+          unit_of_measurement: seconds
+          mode: box
+
+variables:
+  target_lights: !input target_light
+  reference_light_entity: !input reference_light
+  reset_direction: !input reset_direction_after_inactivity
+  configured_dimming_speed: !input dimming_speed
+
+triggers:
+  - trigger: device
+    domain: mqtt
+    device_id: !input dimmer_device
+    type: action
+    subtype: up_press_release
+    id: short
+  - trigger: device
+    domain: mqtt
+    device_id: !input dimmer_device
+    type: action
+    subtype: up_hold
+    id: hold
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: short
+        sequence:
+          - action: light.toggle
+            target:
+              entity_id: !input target_light
+            data:
+              transition: 0.5
+
+      - conditions:
+          - condition: trigger
+            id: hold
+        sequence:
+          - variables:
+              start_brightness: >-
+                {% if reference_light_entity %}
+                  {{ state_attr(reference_light_entity, 'brightness') | int(0) }}
+                {% else %}
+                  {% set values = namespace(items=[]) %}
+                  {% for entity in target_lights %}
+                    {% set value = state_attr(entity, 'brightness') %}
+                    {% if value is number %}
+                      {% set values.items = values.items + [value | int] %}
+                    {% endif %}
+                  {% endfor %}
+                  {{ ((values.items | sum) / (values.items | count)) | round(0) | int
+                     if values.items else 0 }}
+                {% endif %}
+          - variables:
+              dim_direction: >-
+                {{ 'down' if start_brightness > 0 and start_brightness % 2 == 1
+                   else 'up' }}
+              dim_step: >-
+                {{ ((configured_dimming_speed | float) / 2) *
+                   (-1 if dim_direction == 'down' else 1) }}
+          - repeat:
+              sequence:
+                - action: light.turn_on
+                  target:
+                    entity_id: !input target_light
+                  data:
+                    brightness_step_pct: "{{ dim_step }}"
+                    transition: 0.5
+                - wait_for_trigger:
+                    - trigger: device
+                      domain: mqtt
+                      device_id: !input dimmer_device
+                      type: action
+                      subtype: up_hold_release
+                  timeout:
+                    milliseconds: 500
+                  continue_on_timeout: true
+              until:
+                - condition: template
+                  value_template: "{{ wait.trigger is not none }}"
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_step: 0
+          - delay:
+              milliseconds: 300
+          - variables:
+              final_brightness: >-
+                {% if reference_light_entity %}
+                  {{ state_attr(reference_light_entity, 'brightness') | int(2) }}
+                {% else %}
+                  {% set values = namespace(items=[]) %}
+                  {% for entity in target_lights %}
+                    {% set value = state_attr(entity, 'brightness') %}
+                    {% if value is number %}
+                      {% set values.items = values.items + [value | int] %}
+                    {% endif %}
+                  {% endfor %}
+                  {{ ((values.items | sum) / (values.items | count)) | round(0) | int
+                     if values.items else 2 }}
+                {% endif %}
+              encoded_brightness: >-
+                {% if dim_direction == 'up' %}
+                  {{ [final_brightness + (1 if final_brightness % 2 == 0 else 0), 255] | min }}
+                {% else %}
+                  {{ 2 if final_brightness <= 2 else
+                     final_brightness - (1 if final_brightness % 2 == 1 else 0) }}
+                {% endif %}
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness: "{{ encoded_brightness }}"
+
+  - if:
+      - condition: template
+        value_template: "{{ reset_direction }}"
+    then:
+      - delay:
+          seconds: !input inactivity_timeout
+      - variables:
+          brightness_before_reset: >-
+            {% if reference_light_entity %}
+              {{ state_attr(reference_light_entity, 'brightness') | int(0) }}
+            {% else %}
+              {% set values = namespace(items=[]) %}
+              {% for entity in target_lights %}
+                {% set value = state_attr(entity, 'brightness') %}
+                {% if value is number %}
+                  {% set values.items = values.items + [value | int] %}
+                {% endif %}
+              {% endfor %}
+              {{ ((values.items | sum) / (values.items | count)) | round(0) | int
+                 if values.items else 0 }}
+            {% endif %}
+          target_is_on: >-
+            {% if reference_light_entity %}
+              {{ is_state(reference_light_entity, 'on') }}
+            {% else %}
+              {% set lights = namespace(any_on=false) %}
+              {% for entity in target_lights %}
+                {% if is_state(entity, 'on') %}
+                  {% set lights.any_on = true %}
+                {% endif %}
+              {% endfor %}
+              {{ lights.any_on }}
+            {% endif %}
+      - if:
+          - condition: template
+            value_template: >-
+              {{ brightness_before_reset > 0 and
+                 brightness_before_reset % 2 == 1 and
+                 target_is_on }}
+        then:
+          - action: light.turn_on
+            target:
+              entity_id: >-
+                {{ reference_light_entity if reference_light_entity else target_lights }}
+            data:
+              brightness: >-
+                {{ 2 if brightness_before_reset <= 1 else
+                   brightness_before_reset - 1 }}
+
+mode: restart
+max_exceeded: silent
