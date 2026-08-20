@@ -95,20 +95,6 @@ through MQTT/Zigbee2MQTT:
 Inputs: Hue Dimmer device, light target, dimming parameters and optional actions
 for long presses. Minimum Home Assistant version: 2024.6.0.
 
-#### Hue Magic Up Button – Helper-Free Dimmer 1.1
-
-[`hue_magic_up_button.yaml`](blueprints/automation/papamike/hue_magic_up_button.yaml)
-temporarily turns the up button on a Philips Hue Dimmer Switch into a
-helper-free one-button light controller. A short press toggles the selected
-lights. Holding the button alternates dimming direction; releasing it stops
-dimming and synchronizes every target light to the final level. Repeated hold
-messages are ignored until release, preventing one physical hold from changing
-direction partway through. An optional reference light can coordinate a group.
-
-The blueprint deliberately handles only the up button and has no double-press
-action because the Hue Dimmer does not expose a separate double-press device
-action. Disable any other automation that uses the same button while testing.
-
 ### Script blueprints
 
 #### MyNotifier Plus
