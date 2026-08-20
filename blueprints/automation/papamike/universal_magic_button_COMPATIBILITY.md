@@ -9,10 +9,10 @@ verified until someone has tested the complete hold-to-dim and release flow.
 
 ### Remote controls
 
-| Remote | Integration | Short trigger | Hold trigger | Release trigger | Result |
+| Remote | Integration | Toggle trigger | Dim-start trigger | Dim-stop trigger | Result |
 |---|---|---|---|---|---|
-| Philips Hue Dimmer Switch gen 1, model `324131092621` | Zigbee2MQTT through Home Assistant MQTT device triggers | `up_press_release` (`short`) | `up_hold` (`hold`) | `up_hold_release` | Verified |
-| Philips Hue Dimmer Switch gen 2, model `929002398602` | Zigbee2MQTT through Home Assistant MQTT device triggers | `up_press_release` (`short`) | `up_hold` (`hold`) | `up_hold_release` | Verified |
+| Philips Hue Dimmer Switch gen 1, model `324131092621` | Zigbee2MQTT through Home Assistant MQTT device triggers | `up_press_release` → `toggle` | `up_hold` → `dim_start` | `up_hold_release` → `dim_stop` | Verified |
+| Philips Hue Dimmer Switch gen 2, model `929002398602` | Zigbee2MQTT through Home Assistant MQTT device triggers | `up_press_release` → `toggle` | `up_hold` → `dim_start` | `up_hold_release` → `dim_stop` | Verified |
 
 The Hue test uses the physical brightness-up button. Zigbee2MQTT may emit
 repeated `up_hold` actions during one physical hold; the blueprint correctly
@@ -58,7 +58,7 @@ integration and device-generation differences can still affect the result.
 | [Aqara Wireless Mini Switch T1, `WXKG13LM`](https://www.zigbee2mqtt.io/devices/WXKG13LM.html) | Zigbee2MQTT/MQTT | `single` | `hold` | `release` | Possibly compatible; needs testing |
 | IKEA RODRET, `E2201` | Zigbee2MQTT/MQTT | `on` or `off` | `brightness_move_up` or `brightness_move_down` | `brightness_stop` | Expected |
 | [Aqara Wireless Mini Switch, `WXKG11LM`](https://www.zigbee2mqtt.io/devices/WXKG11LM.html), variants that expose hold and release | Zigbee2MQTT/MQTT | `single` | `hold` | `release` | Possibly compatible; needs testing and is variant-dependent |
-| Shelly Plus 1 or Plus 2PM, generation 2 | Native Home Assistant Shelly integration, input mode `Button` | `single_push` | `long_push` | `btn_up` | Expected; `double_push` can be mapped to `double` |
+| Shelly Plus 1 or Plus 2PM, generation 2 | Native Home Assistant Shelly integration, input mode `Button` | `single_push` | `long_push` | `btn_up` | Expected; `double_push` can be mapped to `set_default` |
 
 Equivalent device triggers exposed by ZHA or deCONZ should also work when they
 provide distinct short, hold-start and hold-release events. Their exact event

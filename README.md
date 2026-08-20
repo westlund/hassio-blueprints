@@ -9,7 +9,7 @@ committed to the installation's configuration repository.
 
 ### Automation blueprints
 
-#### Universal Magic Button – Helper-Free Dimmer 1.0.0-beta.1
+#### Universal Magic Button – Helper-Free Dimmer 1.0.0-beta.2
 
 [`universal_magic_button.yaml`](blueprints/automation/papamike/universal_magic_button.yaml)
 solves a deceptively awkward problem: dimming both up and down with only one
@@ -29,6 +29,11 @@ remote must expose separate events for the start and end of a long press.
 Pure on/off targets are detected automatically. Continuous-dimming behavior in
 other brightness-capable lights must be verified by the user because Home
 Assistant does not expose it as a filterable capability.
+
+Neutral blueprint IDs map integration-specific device events to functions:
+`toggle`, optional `set_default`, `dim_start` and the recommended release ID
+`dim_stop`. The previous `short`, `double` and `hold` IDs remain compatible
+during the beta period.
 
 See the
 [`complete configuration guide`](blueprints/automation/papamike/universal_magic_button_README.md)
