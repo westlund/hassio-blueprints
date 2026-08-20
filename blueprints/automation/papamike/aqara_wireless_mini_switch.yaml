@@ -1,7 +1,8 @@
 blueprint:
-  name: Aqara Wireless Mini Switch for use with Zigbee2MQTT v1.0
-  description: One-button dimmer automation using Aqara Wireless Mini Switch with Z2igbee2MQTT
+  name: Aqara Wireless Mini Switch for use with Zigbee2MQTT v1.1
+  description: One-button alternating dimmer automation using an Aqara Wireless Mini Switch with Zigbee2MQTT
   author: Michael Westlund
+  source_url: https://github.com/westlund/hassio-blueprints/blob/main/blueprints/automation/papamike/aqara_wireless_mini_switch.yaml
   domain: automation
   input:
     button_action:
@@ -18,6 +19,23 @@ blueprint:
           multiple: true
           filter:
             domain: light
+    session_reset_delay:
+      name: New session delay
+      description: >
+        Seconds after the latest dimming session before the next hold is reset
+        to dim upwards.
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 60
+          step: 1
+          unit_of_measurement: seconds
+          mode: slider
+
+variables:
+  target_lights: !input target_light
+  reference_light: "{{ target_lights | first }}"
 
 trigger:
   - platform: mqtt
@@ -32,11 +50,6 @@ trigger:
     topic: !input button_action
     id: hold
     payload: hold
-  - platform: mqtt
-    topic: !input button_action
-    payload: release
-    id: release
-
 action:
   - choose:
       - conditions:
@@ -65,33 +78,69 @@ action:
           - condition: trigger
             id: hold
         sequence:
+          - variables:
+              start_brightness: >-
+                {{ state_attr(reference_light, 'brightness') | int(0) }}
+              dim_direction: >-
+                {{ 'down' if start_brightness > 0 and start_brightness % 2 == 1
+                   else 'up' }}
+              dim_step: "{{ -5 if dim_direction == 'down' else 5 }}"
           - repeat:
-              while:
-                - condition: trigger
-                  id: hold
               sequence:
-                - service: light.turn_on
+                - action: light.turn_on
                   data:
-                    brightness_step_pct: 5
+                    brightness_step_pct: "{{ dim_step }}"
                     transition: 0.5
                   target:
                     entity_id:
                       !input target_light
-                - delay:
-                    hours: 0
-                    minutes: 0
-                    seconds: 0
+                - wait_for_trigger:
+                    - trigger: mqtt
+                      topic: !input button_action
+                      payload: release
+                  timeout:
                     milliseconds: 500
-      - conditions:
-          - condition: trigger
-            id: release
-        sequence:
-          - service: light.turn_on
+                  continue_on_timeout: true
+              until:
+                - condition: template
+                  value_template: "{{ wait.trigger is not none }}"
+          - action: light.turn_on
             data:
               brightness_step: 0
             target:
               entity_id:
                 !input target_light
+          - delay:
+              milliseconds: 300
+          - variables:
+              final_brightness: >-
+                {{ state_attr(reference_light, 'brightness') | int(2) }}
+              encoded_brightness: >-
+                {% if dim_direction == 'up' %}
+                  {{ [final_brightness + (1 if final_brightness % 2 == 0 else 0), 255] | min }}
+                {% else %}
+                  {{ 2 if final_brightness <= 2 else
+                     final_brightness - (1 if final_brightness % 2 == 1 else 0) }}
+                {% endif %}
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness: "{{ encoded_brightness }}"
+          - delay:
+              seconds: !input session_reset_delay
+          - variables:
+              reset_brightness: >-
+                {{ state_attr(reference_light, 'brightness') | int(0) }}
+          - condition: template
+            value_template: >-
+              {{ is_state(reference_light, 'on') and reset_brightness % 2 == 1 }}
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness: >-
+                {{ 2 if reset_brightness <= 1 else reset_brightness - 1 }}
 mode: restart
 
 

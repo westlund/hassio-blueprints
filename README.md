@@ -17,10 +17,14 @@ the configured Zigbee2MQTT action topic and can control one or more lights:
 
 - single press toggles the selected lights;
 - double press turns them on at 67% brightness and 3400 K;
-- hold repeatedly increases brightness;
-- release stops the brightness change.
+- hold alternates between increasing and decreasing brightness;
+- release stops dimming and encodes the next direction in the otherwise
+  imperceptible odd/even parity of the raw brightness value;
+- after a configurable inactivity delay, the parity is reset so a new session
+  always starts by increasing brightness.
 
-Inputs: Zigbee2MQTT action topic and target light entities.
+Inputs: Zigbee2MQTT action topic, target light entities and new-session delay
+(10 seconds by default). No helper entity is required.
 
 #### Discreet Volume Limiter (beta)
 
