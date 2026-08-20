@@ -141,10 +141,10 @@ The automation uses `single` mode. Once a hold starts, additional start events
 are ignored until release. This is required for remotes that repeat their hold
 message while the button remains down.
 
-The next direction is carried without a separate Home Assistant helper. The
-public description intentionally treats this as an implementation detail.
-Direction alternates between completed holds; this version does not reset the
-direction after an inactivity timeout.
+Unlike many other dimmer blueprints, this blueprint does not require a Home
+Assistant helper to alternate between dimming up and down. The direction
+alternates between completed holds. This version does not reset the direction
+after an inactivity timeout.
 
 ## Troubleshooting
 
