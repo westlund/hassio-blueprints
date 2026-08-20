@@ -1,5 +1,5 @@
 blueprint:
-  name: Aqara Magic Button - Helper-Free Dimmer for Zigbee2MQTT v1.3
+  name: Aqara Magic Button - Helper-Free Dimmer for Zigbee2MQTT v1.4
   description: >
     A helper-free one-button light controller with toggle, configurable double
     press and alternating up/down dimming. After a configurable period of
@@ -21,10 +21,10 @@ blueprint:
     reference_light:
       name: Reference light (optional)
       description: >
-        A target light that is dimmed continuously and acts as the state
-        reference for the entire group. When dimming stops, all target lights
-        are synchronized to its level. When omitted, the target lights are
-        dimmed and handled together automatically.
+        A target light that acts as the state and level reference for the
+        entire group. All target lights are always asked to dim. When dimming
+        stops, they are synchronized to the reference light's final level.
+        When omitted, the target lights are handled together automatically.
       default:
       selector:
         entity:
@@ -168,9 +168,7 @@ actions:
               sequence:
                 - action: light.turn_on
                   target:
-                    entity_id: >-
-                      {{ [reference_light_entity] if reference_light_entity
-                         else target_lights }}
+                    entity_id: !input target_light
                   data:
                     brightness_step_pct: "{{ dim_step }}"
                     transition: 0.5
@@ -186,9 +184,7 @@ actions:
                   value_template: "{{ wait.trigger is not none }}"
           - action: light.turn_on
             target:
-              entity_id: >-
-                {{ [reference_light_entity] if reference_light_entity
-                   else target_lights }}
+              entity_id: !input target_light
             data:
               brightness_step: 0
           - delay:
