@@ -22,12 +22,24 @@ deCONZ or another integration.
 ## Requirements
 
 - Home Assistant 2024.10.0 or newer.
-- At least one light entity.
-- A button integration that exposes a hold-start event and a corresponding
-  release or stop event for continuous dimming.
+- At least one selected light must support continuous dimming.
+- If every target light supports continuous dimming, the reference light is
+  optional.
+- If one or more target lights lack continuous dimming, a reference light is
+  required. The reference must be one of the continuously dimmable target
+  lights.
+- The remote and its Home Assistant integration must expose separate events for
+  the start and end of a long press, such as `hold` plus `hold_release`, or
+  `brightness_move_up` plus `brightness_stop`.
 
-A remote without hold and release can still be used for short and double press,
-but it cannot provide continuous dimming through this blueprint.
+A remote that cannot distinguish the start of a long press from its release or
+stop is incompatible with this blueprint. A short-, double- and long-press
+event without a separate release event is not sufficient.
+
+Home Assistant does not expose continuous dimming as one standardized light
+capability that a blueprint selector can filter reliably across integrations.
+The user must therefore verify these requirements when choosing target and
+reference lights.
 
 ## Configuration
 
@@ -58,9 +70,13 @@ repeated hold messages cannot restart the automation or reverse direction.
 
 ### 3. Select lights
 
-Choose one or more target lights. A reference light is optional. When selected,
-it determines the initial direction and final level for the group. Otherwise,
-the blueprint calculates a level from the target lights that report brightness.
+Choose one or more target lights. At least one must support continuous dimming.
+If every target light supports it, the reference light is optional and the
+blueprint calculates a level from the target lights that report brightness.
+
+For a mixed group, select one of the continuously dimmable target lights as the
+reference. It determines the initial direction and final level for the entire
+group. A non-continuously-dimmable light must not be selected as reference.
 
 All selected lights receive every dimming attempt. At release, all lights are
 set to the final absolute brightness so a less capable group member can catch
@@ -118,7 +134,8 @@ direction after an inactivity timeout.
   `double` or `hold`.
 - Dimming never stops: the selected release event does not match what the
   device sends. Observe the device's available automation triggers or event
-  stream and select the matching release/stop event.
+  stream and select the matching release/stop event. If no separate event
+  exists, the remote cannot be used with this blueprint.
 - A hold is interpreted as a short press: some integrations emit a release
   event that represents both actions. Choose a dedicated short-press event if
   the device provides one.
@@ -127,6 +144,8 @@ direction after an inactivity timeout.
   use an integration/device profile that exposes double press distinctly.
 - Lights end at slightly different levels: select the most reliable dimmable
   target as the reference light.
+- A mixed group behaves unpredictably: verify that the selected reference is a
+  target light with continuous-dimming support.
 
 ## Design limitation
 

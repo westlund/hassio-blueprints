@@ -1,12 +1,13 @@
 blueprint:
-  name: Universal Magic Button - Helper-Free Dimmer 1.0
+  name: Universal Magic Button - Helper-Free Dimmer 1.1
   author: Michael Westlund
   description: >
     A helper-free, integration-independent button controller. User-selected
     Home Assistant triggers provide short press, optional double press, hold
     and release. Short and double press can run custom actions, while hold
     alternates smooth dimming up and down and synchronizes all target lights
-    when released.
+    when released. At least one target light must support continuous dimming.
+    A remote must expose separate events for the start and end of a hold.
   source_url: https://github.com/westlund/hassio-blueprints/blob/main/blueprints/automation/papamike/universal_magic_button.yaml
   domain: automation
   homeassistant:
@@ -29,7 +30,9 @@ blueprint:
           name: Hold-release trigger
           description: >
             Select the event emitted when the held button is released. This is
-            monitored only while dimming and does not need a trigger ID.
+            monitored only while dimming and does not need a trigger ID. The
+            remote is incompatible if it cannot report hold start and release
+            as separate events.
           selector:
             trigger:
     lights:
@@ -39,7 +42,9 @@ blueprint:
       input:
         target_light:
           name: Target lights
-          description: Lights controlled and synchronized by the button.
+          description: >
+            Lights controlled and synchronized by the button. At least one
+            selected light must support continuous dimming.
           selector:
             entity:
               multiple: true
@@ -48,8 +53,10 @@ blueprint:
         reference_light:
           name: Reference light (optional)
           description: >
-            A target light that defines the state and final brightness for the
-            group. When omitted, the average available brightness is used.
+            A continuously dimmable target light that defines the state and
+            final brightness for the group. It may be omitted only when every
+            target light supports continuous dimming. It is required for a
+            mixed-capability group.
           default:
           selector:
             entity:
