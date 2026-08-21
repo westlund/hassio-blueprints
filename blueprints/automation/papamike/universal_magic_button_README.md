@@ -278,6 +278,13 @@ device models and payload names.
 
 ## Changelog
 
+### 1.0.0-beta.5 — clearer in-editor guidance
+
+Removed obsolete references to manually assigned Trigger IDs from the current
+blueprint configuration text. Each trigger field now consistently explains
+that selecting an event in that field determines its function automatically.
+Historical labels remain documented only inside the beta.2 migration section.
+
 ### 1.0.0-beta.4 — simplified trigger configuration
 
 The trigger configuration introduced in beta.2 has been refactored and

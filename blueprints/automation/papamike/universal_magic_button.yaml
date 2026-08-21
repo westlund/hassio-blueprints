@@ -1,5 +1,5 @@
 blueprint:
-  name: Universal Magic Button - Helper-Free Dimmer 1.0.0-beta.4
+  name: Universal Magic Button - Helper-Free Dimmer 1.0.0-beta.5
   author: Michael Westlund
   description: |-
     A helper-free, integration-independent controller that lets one physical
@@ -7,10 +7,11 @@ blueprint:
     down; a separate helper is not required to remember the next direction.
 
     You choose the Home Assistant triggers that mean **toggle**, **dim_start**,
-    **dim_stop** and optional **set_scene** in four separate fields. No trigger
-    IDs need to be entered manually. This makes the blueprint usable with MQTT,
-    Zigbee2MQTT, ZHA, deCONZ, Shelly and other integrations. The remote must
-    report the start and end of a hold as two separate events.
+    **dim_stop** and optional **set_scene** in four separate fields. The field in
+    which an event is selected determines its function automatically. This
+    makes the blueprint usable with MQTT, Zigbee2MQTT, ZHA, deCONZ, Shelly and
+    other integrations. The remote must report the start and end of a hold as
+    two separate events.
 
     At least one target must support continuous dimming. On release, dimmable
     targets are synchronized and pure on/off targets follow a configurable
@@ -29,8 +30,8 @@ blueprint:
         Map the events from your physical button to the blueprint's functions.
         Home Assistant calls these event definitions **triggers**. Each function
         has its own field, so you only select the event or events that should
-        perform that function. Do not add Trigger IDs; the blueprint maps the
-        trigger groups internally.
+        perform that function. The selected field maps each event to its
+        function automatically.
       collapsed: false
       input:
         toggle_triggers:
@@ -65,11 +66,10 @@ blueprint:
             remote under **Device**, and select its release/stop event under
             **Trigger**.
 
-            No Trigger ID is needed. The event is monitored only while dimming.
-            You may add more than one stop event. Do not reuse the hold-start
-            event. A remote that reports only a completed long press, without a
-            distinct release/stop event, cannot provide continuous hold-to-dim
-            control with this blueprint.
+            The event is monitored only while dimming. You may add more than one
+            stop event. Do not reuse the hold-start event. A remote that reports
+            only a completed long press, without a distinct release/stop event,
+            cannot provide continuous hold-to-dim control with this blueprint.
           selector:
             trigger:
         set_scene_triggers:
@@ -210,12 +210,12 @@ blueprint:
         Existing automations from earlier beta versions may keep using the old
         combined trigger list temporarily. Do not use it for new automations.
 
-        To migrate in the visual editor, recreate `toggle` or `short` entries in
-        **toggle**, `dim_start` or `hold` entries in **dim_start**, and
-        `set_default` or `double` entries in **set_scene**. The existing release
-        trigger remains valid under **dim_stop**. Verify the new fields, then
-        remove every entry from this legacy list. No Trigger IDs are needed in
-        the new fields.
+        To migrate in the visual editor, move `toggle` or `short` events to
+        **toggle**, `dim_start` or `hold` events to **dim_start**, and
+        `set_default` or `double` events to **set_scene**. The existing release
+        event remains valid under **dim_stop**. Verify the new fields, then
+        remove every entry from this legacy list. In the new configuration, an
+        event's field determines its function.
       input:
         action_triggers:
           name: Legacy combined action triggers
