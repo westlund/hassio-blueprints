@@ -1,6 +1,8 @@
 blueprint:
-  name: MyNotifier Plus
-  #description: Send a notification to any notify.* service (including notify.mobile_app_*).
+  name: "[WIP] MyNotifier Plus"
+  description: >
+    WORK IN PROGRESS. This blueprint is incomplete, intended for testing only
+    and may change without backward compatibility.
   domain: script
 
   input:

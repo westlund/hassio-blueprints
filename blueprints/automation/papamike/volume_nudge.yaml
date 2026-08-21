@@ -1,5 +1,8 @@
 blueprint:
-  name: Volume Nudge BETA
+  name: "[WIP] Volume Nudge"
+  description: >
+    WORK IN PROGRESS. This blueprint is incomplete, intended for testing only
+    and may change without backward compatibility.
   domain: automation
   input:
     media_player_entity_selector:

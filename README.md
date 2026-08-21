@@ -5,11 +5,9 @@ Assistant installations. The repository is the source of truth; the copies in
 each Home Assistant configuration are installed artifacts and should not be
 committed to the installation's configuration repository.
 
-## Contents
+## Published blueprints
 
-### Automation blueprints
-
-#### Universal Magic Button – Helper-Free Dimmer 1.0.0-beta.2
+### Universal Magic Button – Helper-Free Dimmer 1.0.0-beta.2
 
 [`universal_magic_button.yaml`](blueprints/automation/papamike/universal_magic_button.yaml)
 solves a deceptively awkward problem: dimming both up and down with only one
@@ -44,43 +42,7 @@ distinguishes verified combinations from devices that should work or are known
 to be unsupported, and explains how to report exact action names from new
 successful tests.
 
-#### Aqara Magic Button – Helper-Free Dimmer for Zigbee2MQTT 1.4
-
-[`aqara_wireless_mini_switch.yaml`](blueprints/automation/papamike/aqara_wireless_mini_switch.yaml)
-turns an Aqara one-button remote into a compact light controller. It listens to
-the configured Zigbee2MQTT action topic and can control one or more lights:
-
-- single press toggles the selected lights;
-- double press turns them on at a configurable brightness and color
-  temperature (67% and 2700 K by default);
-- hold alternates between increasing and decreasing brightness;
-- release stops dimming and remembers the direction for the next hold;
-- all target lights are always asked to dim;
-- on release, all target lights are corrected to the desired final level if
-  they have not already reached it;
-- after a configurable inactivity delay, a new session always starts by
-  increasing brightness.
-
-Inputs: Zigbee2MQTT action topic, target light entities, optional reference
-light, double-press brightness and color temperature, direction-reset switch
-and inactivity timeout (10 seconds by default), plus dimming speed (10% per
-second by default). The optional reference light coordinates the group state
-and defines the final group level. Lights without smooth step dimming can still
-follow when the final absolute level is applied. No helper entity is required.
-
-#### Volume Nudge (beta)
-
-[`volume_nudge.yaml`](blueprints/automation/papamike/volume_nudge.yaml) is
-intended to monitor a media player's volume and gently bring it below a
-configured ceiling. It provides inputs for a fixed maximum volume, an optional
-`input_number` limit and an optional `input_boolean` enable switch.
-
-This blueprint is experimental. In the current implementation, the corrective
-`media_player.volume_down` action is disabled and the optional helpers are not
-yet applied to the limiter logic. Do not rely on it as an active volume limit
-until that behavior has been completed and tested.
-
-#### Hue Dimmer Beyond Lighting 0.5.1b
+### Hue Dimmer Beyond Lighting 0.5.1b
 
 [`hue_dimmer_beyond_light.yaml`](blueprints/automation/papamike/hue_dimmer_beyond_light.yaml)
 provides full control for Philips Hue Dimmer Switch v1 and v2 devices connected
@@ -95,18 +57,21 @@ through MQTT/Zigbee2MQTT:
 Inputs: Hue Dimmer device, light target, dimming parameters and optional actions
 for long presses. Minimum Home Assistant version: 2024.6.0.
 
+## Work in progress
+
+> [!WARNING]
+> The following blueprints are unfinished personal experiments. They may be
+> incomplete, untested or changed without backward compatibility. They are not
+> currently documented or recommended for general use.
+
+### Automation blueprints
+
+- [Aqara Magic Button – Helper-Free Dimmer for Zigbee2MQTT](blueprints/automation/papamike/aqara_wireless_mini_switch.yaml) — **WIP**
+- [Volume Nudge](blueprints/automation/papamike/volume_nudge.yaml) — **WIP**
+
 ### Script blueprints
 
-#### MyNotifier Plus
-
-[`custom_notification.yaml`](blueprints/script/papamike/custom_notification.yaml)
-is a queued notification script for a device running the Home Assistant mobile
-app. It accepts a target device, title, multiline message and priority choice,
-then sends the message through `notify.notify`. Up to ten calls can be queued.
-
-The current implementation sets notification badge `2`. The selected priority
-is exposed as an input but is not yet passed as an interruption level to the
-mobile notification.
+- [MyNotifier Plus](blueprints/script/papamike/custom_notification.yaml) — **WIP**
 
 ## Install or update on Home Assistant OS
 

@@ -1,9 +1,8 @@
 blueprint:
-  name: Aqara Magic Button - Helper-Free Dimmer for Zigbee2MQTT v1.4
+  name: "[WIP] Aqara Magic Button - Helper-Free Dimmer for Zigbee2MQTT v1.4"
   description: >
-    A helper-free one-button light controller with toggle, configurable double
-    press and alternating up/down dimming. After a configurable period of
-    inactivity, a new dimming session can always start by dimming upwards.
+    WORK IN PROGRESS. This blueprint is incomplete, intended for testing only
+    and may change without backward compatibility.
   author: Michael Westlund
   source_url: https://github.com/westlund/hassio-blueprints/blob/main/blueprints/automation/papamike/aqara_wireless_mini_switch.yaml
   domain: automation
