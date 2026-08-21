@@ -7,7 +7,7 @@ committed to the installation's configuration repository.
 
 ## Published blueprints
 
-### Universal Magic Button – Helper-Free Dimmer 1.0.0-beta.2
+### Universal Magic Button – Helper-Free Dimmer 1.0.0-beta.4
 
 [`universal_magic_button.yaml`](blueprints/automation/papamike/universal_magic_button.yaml)
 solves a deceptively awkward problem: dimming both up and down with only one
@@ -15,12 +15,17 @@ button in Home Assistant, without manually creating a helper. Alternate long
 presses dim in opposite directions, while short and optional double presses can
 run their own actions.
 
-Users select Home Assistant triggers for short press, optional double press,
-hold and release, so the same integration-independent dimming engine can work
-with MQTT, Zigbee2MQTT, ZHA, deCONZ, Shelly and other integrations. It provides
-configurable press actions, an optional reference light and final
-synchronization of dimmable target lights. Pure on/off target lights are left
-on or off after dimming according to a configurable brightness breakpoint. At
+Users select Home Assistant triggers in separate `toggle`, `dim_start`,
+`dim_stop` and optional `set_scene` fields, so the same
+integration-independent dimming engine can work with MQTT, Zigbee2MQTT, ZHA,
+deCONZ, Shelly and other integrations. No Trigger IDs or YAML editing are
+required for a new automation. It provides configurable press actions, an
+optional reference light and final synchronization of dimmable target lights.
+Pure on/off target lights are left on or off after dimming according to a
+configurable brightness breakpoint. Toggle is reference-led rather than
+applied independently: every target turns
+off together, while turning on synchronizes dimmable targets to the reference
+brightness and applies the same breakpoint to pure on/off targets. At
 least one target light must support continuous dimming. A reference light is
 required only for mixed groups where some targets lack that support, and the
 remote must expose separate events for the start and end of a long press.
@@ -28,14 +33,14 @@ Pure on/off targets are detected automatically. Continuous-dimming behavior in
 other brightness-capable lights must be verified by the user because Home
 Assistant does not expose it as a filterable capability.
 
-Neutral blueprint IDs map integration-specific device events to functions:
-`toggle`, optional `set_default`, `dim_start` and the recommended release ID
-`dim_stop`. The previous `short`, `double` and `hold` IDs remain compatible
-during the beta period.
+Several events may be selected for each function. A collapsed legacy input
+continues to recognize the beta.2 IDs `toggle`/`short`, `dim_start`/`hold` and
+`set_default`/`set_scene`/`double` while existing automations are migrated.
 
 See the
 [`complete configuration guide`](blueprints/automation/papamike/universal_magic_button_README.md)
-for requirements, trigger IDs, example mappings and troubleshooting. The
+for requirements, GUI trigger setup, beta migration, example mappings and
+troubleshooting. The
 separate
 [`compatibility catalogue`](blueprints/automation/papamike/universal_magic_button_COMPATIBILITY.md)
 distinguishes verified combinations from devices that should work or are known
