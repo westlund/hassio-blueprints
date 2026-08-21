@@ -9,6 +9,8 @@ committed to the installation's configuration repository.
 
 ### Universal Magic Button – Helper-Free Dimmer 1.0.0-beta.4
 
+[![Import Universal Magic Button into Home Assistant](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fwestlund%2Fhassio-blueprints%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fpapamike%2Funiversal_magic_button.yaml)
+
 [`universal_magic_button.yaml`](blueprints/automation/papamike/universal_magic_button.yaml)
 solves a deceptively awkward problem: dimming both up and down with only one
 button in Home Assistant, without manually creating a helper. Alternate long
@@ -48,6 +50,8 @@ to be unsupported, and explains how to report exact action names from new
 successful tests.
 
 ### Hue Dimmer Beyond Lighting 0.5.2b
+
+[![Import Hue Dimmer Beyond Lighting into Home Assistant](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fwestlund%2Fhassio-blueprints%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fpapamike%2Fhue_dimmer_beyond_light.yaml)
 
 [`hue_dimmer_beyond_light.yaml`](blueprints/automation/papamike/hue_dimmer_beyond_light.yaml)
 provides full control for Philips Hue Dimmer Switch v1 and v2 devices connected
