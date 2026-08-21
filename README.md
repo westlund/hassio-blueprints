@@ -20,9 +20,10 @@ run their own actions.
 Users select Home Assistant triggers in separate `toggle`, `dim_start`,
 `dim_stop` and optional `set_scene` fields, so the same
 integration-independent dimming engine can work with MQTT, Zigbee2MQTT, ZHA,
-deCONZ, Shelly and other integrations. No Trigger IDs or YAML editing are
-required for a new automation. It provides configurable press actions, an
-optional reference light and final synchronization of dimmable target lights.
+deCONZ, Shelly and other integrations. The field in which an event is selected
+determines its function automatically; no manual labels or YAML editing are
+required. It provides configurable press actions, an optional reference light
+and final synchronization of dimmable target lights.
 Pure on/off target lights are left on or off after dimming according to a
 configurable brightness breakpoint. Toggle is reference-led rather than
 applied independently: every target turns
@@ -35,14 +36,14 @@ Pure on/off targets are detected automatically. Continuous-dimming behavior in
 other brightness-capable lights must be verified by the user because Home
 Assistant does not expose it as a filterable capability.
 
-Several events may be selected for each function. A collapsed legacy input
-continues to recognize the beta.2 IDs `toggle`/`short`, `dim_start`/`hold` and
-`set_default`/`set_scene`/`double` while existing automations are migrated.
+Several events may be selected for each function. Automations created with
+beta.2 can be migrated using the collapsed **Legacy settings** section; new
+automations use only the four dedicated trigger fields.
 
 See the
 [`complete configuration guide`](blueprints/automation/papamike/universal_magic_button_README.md)
-for requirements, GUI trigger setup, beta migration, example mappings and
-troubleshooting. The
+for requirements, GUI trigger setup, beta migration, changelog, example
+mappings and troubleshooting. The
 separate
 [`compatibility catalogue`](blueprints/automation/papamike/universal_magic_button_COMPATIBILITY.md)
 distinguishes verified combinations from devices that should work or are known

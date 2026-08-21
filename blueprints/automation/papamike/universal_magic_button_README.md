@@ -79,8 +79,9 @@ firmware and integrations can expose different events.
 
 ### 1. Select triggers in the visual editor
 
-The blueprint has a separate trigger selector for each function. Trigger IDs
-and YAML editing are not required:
+The blueprint has a separate trigger selector for each function. The field in
+which an event is selected determines its function automatically. No manual
+labels or YAML editing are required:
 
 | Field | Function | Typical event | Required |
 |---|---|---|---|
@@ -106,22 +107,24 @@ Separating `dim_stop` from the start triggers ensures that repeated hold-start
 messages cannot restart the automation or reverse direction. Common stop-event
 names include `hold_release`, `release`, `btn_up` and `brightness_stop`.
 
-### 2. Migrate an automation created with beta.2 or older
+### 2. Migrate an automation created with beta.2
 
 Existing combined triggers remain supported in the collapsed **Legacy beta
 migration** section, so updating the blueprint does not immediately break an
 old automation. Migrate it in the visual editor as follows:
 
-1. Recreate old `toggle` or `short` entries in the new **toggle** field.
-2. Recreate old `dim_start` or `hold` entries in **dim_start**.
-3. Recreate old `set_default`, `set_scene` or `double` entries in **set_scene**.
+1. Move events labelled `toggle` or `short` to the new **toggle** field.
+2. Move events labelled `dim_start` or `hold` to **dim_start**.
+3. Move events labelled `set_default`, `set_scene` or `double` to
+   **set_scene**.
 4. Keep the existing release event; the old `release_trigger` input now appears
    as **dim_stop** automatically.
 5. Verify the new configuration, then remove all entries from **Legacy combined
    action triggers**.
 
-Do not add Trigger IDs to the new fields. The legacy input remains only as a
-temporary compatibility bridge during the beta period.
+The new fields determine each event's function by placement. After migration,
+the old labels are no longer used. The legacy input remains only as a temporary
+compatibility bridge during the beta period.
 
 ### 3. Select lights
 
@@ -239,9 +242,9 @@ after an inactivity timeout.
 ## Troubleshooting
 
 - Nothing happens: verify that each event is selected in its matching
-  `toggle`, `dim_start`, `dim_stop` or `set_scene` field. New configurations
-  must not use Trigger IDs. For an unmigrated beta.2 automation, verify the old
-  IDs in **Legacy combined action triggers** instead.
+  `toggle`, `dim_start`, `dim_stop` or `set_scene` field. If the automation was
+  created with beta.2, migrate its events from **Legacy combined action
+  triggers** using the instructions above.
 - Dimming never stops: the selected release event does not match what the
   device sends. Observe the device's available automation triggers or event
   stream and select the matching release/stop event. If no separate event
@@ -272,3 +275,17 @@ the correct integration-specific triggers. Device event vocabularies also vary
 between MQTT, ZHA and deCONZ. User-selected Home Assistant triggers are therefore
 the stable compatibility boundary and avoid a permanently maintained table of
 device models and payload names.
+
+## Changelog
+
+### 1.0.0-beta.4 — simplified trigger configuration
+
+The trigger configuration introduced in beta.2 has been refactored and
+simplified. `toggle`, `dim_start`, `dim_stop` and optional `set_scene` now have
+separate selectors in the visual editor. The selected field maps each event to
+its function automatically, so new automations no longer require manually
+assigned Trigger IDs or YAML editing.
+
+Existing beta.2 automations remain temporarily compatible through the
+collapsed **Legacy settings** section and can be migrated entirely in the
+visual editor.
