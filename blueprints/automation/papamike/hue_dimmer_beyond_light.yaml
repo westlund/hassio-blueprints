@@ -1,5 +1,5 @@
 blueprint:
-  name: "Hue Dimmer Beyond Lighting 0.5.1b"
+  name: "Hue Dimmer Beyond Lighting 0.5.2b"
   author: Michael Westlund <michael@westlund.org>
   description: >
     <h2>Hue Dimmer Beyond Lighting</h2>
@@ -42,11 +42,7 @@ blueprint:
           selector:
             target:
               entity:
-                - supported_features:
-                    - light.LightEntityFeature.TRANSITION
-                  domain: light
-                - integration: mqtt
-                  domain: light
+                - domain: light
     advanced:
       name: Advanced configuration
       description: "Advanced features"

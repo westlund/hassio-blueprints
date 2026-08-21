@@ -42,7 +42,7 @@ distinguishes verified combinations from devices that should work or are known
 to be unsupported, and explains how to report exact action names from new
 successful tests.
 
-### Hue Dimmer Beyond Lighting 0.5.1b
+### Hue Dimmer Beyond Lighting 0.5.2b
 
 [`hue_dimmer_beyond_light.yaml`](blueprints/automation/papamike/hue_dimmer_beyond_light.yaml)
 provides full control for Philips Hue Dimmer Switch v1 and v2 devices connected
