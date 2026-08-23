@@ -7,16 +7,36 @@
 How do you dim lights both up and down with only one button—and implement that
 behavior in Home Assistant without a helper?
 
-This blueprint provides a simple solution: alternate long presses dim up and
-down. No separate helper needs to be created, configured or maintained. Short
-press toggles the lights by default, while an optional double press can apply a
-favorite light setting or run any other Home Assistant action.
+This blueprint provides a simple, helper-free solution: alternate long presses
+dim up and down. No separate Home Assistant helper needs to be created,
+configured or maintained. Short press toggles the lights by default, while an
+optional double press can apply a favorite light setting or run any other Home
+Assistant action.
 
 `universal_magic_button.yaml` is an integration-independent Home Assistant
 automation blueprint for one-button light control. Home Assistant's own trigger
 editor connects the blueprint to the selected remote, so the dimming logic does
 not need to know whether the event originates from MQTT, Zigbee2MQTT, ZHA,
 deCONZ or another integration.
+
+The blueprint is designed for continuous dimming: with a suitable light and
+integration, brightness should fade smoothly while the button is held, without
+visible pauses, flicker or repeated stop-start behavior. When the button is
+released, the selected reference light is used to synchronize the final
+brightness across the rest of the target lights.
+
+For best results, Home Assistant should have direct, low-level control of the
+lights, preferably through Zigbee2MQTT or ZHA. Zigbee2MQTT is generally the
+recommended setup when available, because it often exposes precise device
+actions and gives Home Assistant better practical control over dimming
+behavior. Lights controlled through manufacturer gateways, cloud integrations
+or bridge abstractions may still work, but they are more likely to round
+brightness values, smooth commands in their own way, delay state updates or
+otherwise limit the control needed for truly smooth continuous dimming.
+
+In short: the blueprint provides the helper-free alternating dimming logic, but
+the light and integration still need to expose enough real control for smooth
+continuous dimming to work well.
 
 ## Features
 

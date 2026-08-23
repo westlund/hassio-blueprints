@@ -12,10 +12,12 @@ committed to the installation's configuration repository.
 [![Import Universal Magic Button into Home Assistant](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fwestlund%2Fhassio-blueprints%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fpapamike%2Funiversal_magic_button.yaml)
 
 [`universal_magic_button.yaml`](blueprints/automation/papamike/universal_magic_button.yaml)
-solves a deceptively awkward problem: dimming both up and down with only one
-button in Home Assistant, without manually creating a helper. Alternate long
-presses dim in opposite directions, while short and optional double presses can
-run their own actions.
+is a helper-free Home Assistant blueprint for smooth one-button dimming. It
+solves a deceptively awkward problem: using a single button to toggle a light
+and alternate between dimming up and down, without creating or maintaining a
+separate Home Assistant helper. Each long press continues in the next
+direction, while short press and optional scene/default actions remain
+configurable.
 
 Users select Home Assistant triggers in separate `toggle`, `dim_start`,
 `dim_stop` and optional `set_scene` fields, so the same
@@ -36,6 +38,22 @@ accurately. Other dimmable targets only need to accept final brightness
 commands, and pure on/off targets are detected automatically. Continuous
 dimming behavior must be verified by the user because Home Assistant does not
 expose it as a filterable capability.
+
+The blueprint is designed for continuous dimming: with a suitable light and
+integration, brightness should fade smoothly while the button is held, without
+visible pauses, flicker or repeated stop-start behavior. For best results,
+Home Assistant should have direct, low-level control of the lights, preferably
+through Zigbee2MQTT or ZHA. Zigbee2MQTT is generally the recommended setup when
+available, because it often exposes precise device actions and gives Home
+Assistant better practical control over dimming behavior. Lights controlled
+through manufacturer gateways, cloud integrations or bridge abstractions may
+still work, but they are more likely to round brightness values, smooth
+commands in their own way, delay state updates or otherwise limit the control
+needed for truly smooth continuous dimming.
+
+In short: the blueprint provides the helper-free alternating dimming logic, but
+the light and integration still need to expose enough real control for smooth
+continuous dimming to work well.
 
 Several events may be selected for each function. Automations created with
 beta.2 can be migrated using the collapsed **Legacy settings** section; new
