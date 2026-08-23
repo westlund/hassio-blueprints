@@ -38,19 +38,45 @@ deCONZ or another integration.
 ## Requirements
 
 - Home Assistant 2024.10.0 or newer.
-- At least one selected light must support continuous dimming.
-- If every target light supports continuous dimming, the reference light is
-  optional.
-- If one or more target lights lack continuous dimming, a reference light is
-  required. The reference must be one of the continuously dimmable target
-  lights.
-- The remote and its Home Assistant integration must expose separate events for
-  the start and end of a long press, such as `hold` plus `hold_release`, or
-  `brightness_move_up` plus `brightness_stop`.
+- The remote/controller must expose **separate, distinct events for the start
+  and end of a hold**, for example `hold` plus `hold_release`, or
+  `brightness_move_up` plus `brightness_stop`. A remote that only reports
+  short/long/double press without a dedicated release event cannot be used:
+  there is no way to know when to stop dimming.
 
-A remote that cannot distinguish the start of a long press from its release or
-stop is incompatible with this blueprint. A short-, double- and long-press
-event without a separate release event is not sufficient.
+### Single light
+
+- Must support continuous dimming across the full 0-255 brightness range.
+- Must report back the brightness it actually settled on, accurately and
+  without rounding it away. This light doubles as your only point of reference,
+  so quantization or lossy read-back will affect the alternating behavior.
+
+### Group of lights
+
+- At least one light in the group must meet the single-light requirement above
+  and is selected as the **reference light**.
+- All other lights in the group only need to accept a `light.turn_on`
+  brightness command. They do not need full-range or continuous-dimming
+  support, and can be coarser or step-based, since they follow the reference
+  rather than driving the logic themselves.
+- Pure on/off lights with no brightness support at all are allowed as
+  additional targets. Their final state is decided by the configurable on/off
+  breakpoint once the reference light settles.
+- A light group entity, for example a Home Assistant light group, counts as one
+  target and cannot be used to hide a mix of dimmable and non-dimmable members.
+  Select individual entities if you have a mixed setup.
+
+### Recommended for best results
+
+- Zigbee lights integrated via Zigbee2MQTT or ZHA tend to give the smoothest,
+  most reliable continuous dimming and brightness read-back. Lights behind a
+  manufacturer's own bridge or cloud integration, for example Hue via the Hue
+  Bridge integration rather than Zigbee2MQTT, may still work but are more
+  likely to round or correct brightness values unexpectedly during or after a
+  hold.
+- If a light in your group dims unevenly or lands at a slightly different level
+  than the rest, try selecting a different, more consistent light as the
+  reference.
 
 Home Assistant does not expose continuous dimming as one standardized light
 capability that a blueprint selector can filter reliably across integrations.
@@ -74,6 +100,32 @@ models, action names, known limitations and instructions for reporting a new
 working combination. Reports should include the precise Home Assistant action
 or trigger names; product name alone is not enough because device generations,
 firmware and integrations can expose different events.
+
+## Future idea: capability tester
+
+A future companion blueprint or script could help users test whether a light
+and remote are suitable for this blueprint before creating the final
+automation.
+
+For lights, the useful test is practical rather than purely declarative: start
+continuous dimming up and down, stop it, and verify that the entity follows
+smoothly and reports a usable final brightness. Lights that cannot perform this
+flow would be classified as unsuitable as the reference light. They may still
+be usable as secondary targets if another selected light can act as reference
+and the final absolute brightness correction works well enough.
+
+For remotes, Home Assistant cannot reliably enumerate every possible physical
+button action just because a device is connected. It can show the triggers that
+an integration advertises, and an event listener can observe actions that are
+actually emitted while the user presses the button. A useful test helper would
+therefore guide the user through short press, double press, hold start and
+release, record the observed events, and suggest mappings for `toggle`,
+`set_scene`, `dim_start` and `dim_stop`.
+
+When automatic discovery is incomplete, the fallback is to compare the exact
+model and integration with external device documentation. Zigbee2MQTT is
+especially useful here because its device pages often document the exposed
+`action` values for many years of Zigbee devices.
 
 ## Configuration
 

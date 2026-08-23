@@ -28,13 +28,14 @@ Pure on/off target lights are left on or off after dimming according to a
 configurable brightness breakpoint. Toggle is reference-led rather than
 applied independently: every target turns
 off together, while turning on synchronizes dimmable targets to the reference
-brightness and applies the same breakpoint to pure on/off targets. At
-least one target light must support continuous dimming. A reference light is
-required only for mixed groups where some targets lack that support, and the
-remote must expose separate events for the start and end of a long press.
-Pure on/off targets are detected automatically. Continuous-dimming behavior in
-other brightness-capable lights must be verified by the user because Home
-Assistant does not expose it as a filterable capability.
+brightness and applies the same breakpoint to pure on/off targets. The remote
+must expose distinct hold-start and hold-stop/release events. A single target
+light, or the selected reference light in a group, must support continuous
+dimming across the full brightness range and report its settled brightness
+accurately. Other dimmable targets only need to accept final brightness
+commands, and pure on/off targets are detected automatically. Continuous
+dimming behavior must be verified by the user because Home Assistant does not
+expose it as a filterable capability.
 
 Several events may be selected for each function. Automations created with
 beta.2 can be migrated using the collapsed **Legacy settings** section; new
