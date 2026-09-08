@@ -6,7 +6,7 @@ blueprint:
     <h1><i>Short press controls lights. Long press controls your home.</i></h1>
     <p>A comprehensive control blueprint for the Philips Hue Dimmer Switch In its basic configuration it just controls the lights, but long press of the on/off buttons can be configured to do literally anything Home Assistant can do.
     <p><b>Short presses on the dim</b> buttons provide precise, predictable lighting control using configurable brightness steps.<br />
-    <b>Long presses on the dim</b> buttons start a continuous transition that is stopped when the button is released.<br />
+    <b>Long presses on the dim</b> buttons send a Zigbee2MQTT <code>brightness_move</code> command that is stopped when the button is released.<br />
     <p><b>Short presses on the on/off</b> buttons turns the light on or off using the current setting.<br />
     <b>Long presses on the on/off</b> buttons unlock unrestricted Home Assistant actions.<br />
     <p><i>Any action supported by Home Assistant can be executed — lighting, power, scenes, scripts, shutdown sequences, or entire environments.</i>
@@ -71,14 +71,20 @@ blueprint:
           default: 26
         continuous_dimmer_step:
           name: Continuous Dimmer Speed
-          description: "The number of seconds used for a full continuous transition from minimum to maximum brightness, or vice versa. The existing input ID is retained for compatibility with earlier versions."
+          description: "Brightness levels per second used by Zigbee2MQTT brightness_move. The existing input ID is retained for compatibility with earlier versions."
           selector:
             number:
               min: 1
-              max: 32
+              max: 254
               step: 1
               mode: slider
           default: 16
+        zigbee2mqtt_base_topic:
+          name: Zigbee2MQTT Base Topic
+          description: "The Zigbee2MQTT MQTT base topic. The blueprint derives each device topic from the selected light's Home Assistant device name."
+          selector:
+            text: {}
+          default: zigbee2mqtt
         on_action:
           name: Additional action for long press on
           selector:
@@ -92,6 +98,39 @@ blueprint:
 
 mode: restart
 max_exceeded: silent
+
+variables:
+  lights_target_input: !input lights_target
+  continuous_dimmer_speed: !input continuous_dimmer_step
+  zigbee2mqtt_base_topic_input: !input zigbee2mqtt_base_topic
+  continuous_dimmer_entities: >-
+    {% set ns = namespace(entities=[]) %}
+    {% set direct = lights_target_input.get('entity_id', []) %}
+    {% set direct = [direct] if direct is string else direct %}
+    {% for state in expand(direct) %}
+      {% if state.entity_id.startswith('light.') %}
+        {% set ns.entities = ns.entities + [state.entity_id] %}
+      {% endif %}
+    {% endfor %}
+    {% set areas = lights_target_input.get('area_id', []) %}
+    {% set areas = [areas] if areas is string else areas %}
+    {% for area in areas %}
+      {% for entity_id in area_entities(area) %}
+        {% if entity_id.startswith('light.') %}
+          {% set ns.entities = ns.entities + [entity_id] %}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+    {% set devices = lights_target_input.get('device_id', []) %}
+    {% set devices = [devices] if devices is string else devices %}
+    {% for device in devices %}
+      {% for entity_id in device_entities(device) %}
+        {% if entity_id.startswith('light.') %}
+          {% set ns.entities = ns.entities + [entity_id] %}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+    {{ ns.entities | unique | list }}
 
 triggers:
   - domain: mqtt
@@ -202,29 +241,40 @@ actions:
           - condition: trigger
             id: dim-up-continuous
         sequence:
-          - action: light.turn_on
-            data:
-              brightness: 255
-              transition: !input continuous_dimmer_step
-            target: !input lights_target
+          - repeat:
+              for_each: "{{ continuous_dimmer_entities }}"
+              sequence:
+                - action: mqtt.publish
+                  data:
+                    topic: >-
+                      {{ zigbee2mqtt_base_topic_input }}/{{ device_attr(device_id(repeat.item), 'name') }}/set
+                    payload: >-
+                      {{ {'brightness_move': continuous_dimmer_speed | int} | to_json }}
       - conditions:
           - condition: trigger
             id: dim-stop
         sequence:
-          - action: light.turn_on
-            data:
-              brightness_step: 0
-              transition: 0
-            target: !input lights_target
+          - repeat:
+              for_each: "{{ continuous_dimmer_entities }}"
+              sequence:
+                - action: mqtt.publish
+                  data:
+                    topic: >-
+                      {{ zigbee2mqtt_base_topic_input }}/{{ device_attr(device_id(repeat.item), 'name') }}/set
+                    payload: '{"brightness_move": 0}'
       - conditions:
           - condition: trigger
             id: dim-down-continuous
         sequence:
-          - action: light.turn_on
-            data:
-              brightness: 1
-              transition: !input continuous_dimmer_step
-            target: !input lights_target
+          - repeat:
+              for_each: "{{ continuous_dimmer_entities }}"
+              sequence:
+                - action: mqtt.publish
+                  data:
+                    topic: >-
+                      {{ zigbee2mqtt_base_topic_input }}/{{ device_attr(device_id(repeat.item), 'name') }}/set
+                    payload: >-
+                      {{ {'brightness_move': -(continuous_dimmer_speed | int)} | to_json }}
       - conditions:
           - condition: trigger
             id: dim-up-step

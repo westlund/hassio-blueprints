@@ -79,13 +79,18 @@ through MQTT/Zigbee2MQTT:
 
 - short on/off presses control the selected lights;
 - short dim presses change brightness in configurable steps;
-- holding dim starts one continuous transition, which release stops with a
-  separate command;
+- holding dim sends one Zigbee2MQTT `brightness_move` command per selected
+  light; release starts a new run that sends `brightness_move: 0`;
 - long on/off presses can run arbitrary Home Assistant actions;
 - transition time, step size and continuous dimming speed are configurable.
 
-Inputs: Hue Dimmer device, light target, dimming parameters and optional actions
-for long presses. Minimum Home Assistant version: 2024.6.0.
+The selected lights must be Zigbee2MQTT devices whose Home Assistant device
+names match their Zigbee2MQTT friendly names. The MQTT base topic is
+configurable and defaults to `zigbee2mqtt`.
+
+Inputs: Hue Dimmer device, light target, dimming parameters, Zigbee2MQTT base
+topic and optional actions for long presses. Minimum Home Assistant version:
+2024.6.0.
 
 ## Work in progress
 
