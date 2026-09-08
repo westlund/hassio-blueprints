@@ -37,12 +37,20 @@ blueprint:
                   model_id: "929002398602"
         lights_target:
           name: Lights
-          description: "Select dimmable light entities directly or a target that contains dimmable lights."
+          description: "Select the lights that the dimmer controls. Mixed integrations are supported; after continuous dimming, all targets synchronize to the dimmer master."
           default: []
           selector:
             target:
               entity:
                 - domain: light
+        dimmer_master:
+          name: Continuous Dimmer Master
+          description: "Optional Zigbee2MQTT light or group that receives brightness_move. When empty, the first selected light is used."
+          default:
+          selector:
+            entity:
+              filter:
+                domain: light
     advanced:
       name: Advanced configuration
       description: "Advanced features"
@@ -101,6 +109,7 @@ max_exceeded: silent
 
 variables:
   lights_target_input: !input lights_target
+  configured_dimmer_master: !input dimmer_master
   continuous_dimmer_speed: !input continuous_dimmer_step
   zigbee2mqtt_base_topic_input: !input zigbee2mqtt_base_topic
   continuous_dimmer_entities: >-
@@ -131,6 +140,13 @@ variables:
       {% endfor %}
     {% endfor %}
     {{ ns.entities | unique | list }}
+  dimmer_master_entity: >-
+    {{ configured_dimmer_master
+       if configured_dimmer_master
+       else (continuous_dimmer_entities | first | default('')) }}
+  synchronize_after_dimming: >-
+    {{ continuous_dimmer_entities | count > 1
+       or dimmer_master_entity not in continuous_dimmer_entities }}
 
 triggers:
   - domain: mqtt
@@ -241,40 +257,46 @@ actions:
           - condition: trigger
             id: dim-up-continuous
         sequence:
-          - repeat:
-              for_each: "{{ continuous_dimmer_entities }}"
-              sequence:
-                - action: mqtt.publish
-                  data:
-                    topic: >-
-                      {{ zigbee2mqtt_base_topic_input }}/{{ device_attr(device_id(repeat.item), 'name') }}/set
-                    payload: >-
-                      {{ {'brightness_move': continuous_dimmer_speed | int} | to_json }}
+          - action: mqtt.publish
+            data:
+              topic: >-
+                {{ zigbee2mqtt_base_topic_input }}/{{ device_attr(device_id(dimmer_master_entity), 'name') }}/set
+              payload: >-
+                {{ {'brightness_move': continuous_dimmer_speed | int} | to_json }}
       - conditions:
           - condition: trigger
             id: dim-stop
         sequence:
-          - repeat:
-              for_each: "{{ continuous_dimmer_entities }}"
-              sequence:
-                - action: mqtt.publish
-                  data:
-                    topic: >-
-                      {{ zigbee2mqtt_base_topic_input }}/{{ device_attr(device_id(repeat.item), 'name') }}/set
-                    payload: '{"brightness_move": 0}'
+          - action: mqtt.publish
+            data:
+              topic: >-
+                {{ zigbee2mqtt_base_topic_input }}/{{ device_attr(device_id(dimmer_master_entity), 'name') }}/set
+              payload: '{"brightness_move": 0}'
+          - delay:
+              milliseconds: 300
+          - variables:
+              master_brightness: >-
+                {{ state_attr(dimmer_master_entity, 'brightness') }}
+          - if:
+              - condition: template
+                value_template: >-
+                  {{ synchronize_after_dimming and master_brightness is number }}
+            then:
+              - action: light.turn_on
+                data:
+                  brightness: "{{ master_brightness }}"
+                  transition: !input step_dimmer_speed
+                target: !input lights_target
       - conditions:
           - condition: trigger
             id: dim-down-continuous
         sequence:
-          - repeat:
-              for_each: "{{ continuous_dimmer_entities }}"
-              sequence:
-                - action: mqtt.publish
-                  data:
-                    topic: >-
-                      {{ zigbee2mqtt_base_topic_input }}/{{ device_attr(device_id(repeat.item), 'name') }}/set
-                    payload: >-
-                      {{ {'brightness_move': -(continuous_dimmer_speed | int)} | to_json }}
+          - action: mqtt.publish
+            data:
+              topic: >-
+                {{ zigbee2mqtt_base_topic_input }}/{{ device_attr(device_id(dimmer_master_entity), 'name') }}/set
+              payload: >-
+                {{ {'brightness_move': -(continuous_dimmer_speed | int)} | to_json }}
       - conditions:
           - condition: trigger
             id: dim-up-step
