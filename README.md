@@ -69,7 +69,7 @@ distinguishes verified combinations from devices that should work or are known
 to be unsupported, and explains how to report exact action names from new
 successful tests.
 
-### Hue Dimmer Beyond Lighting 1.0.0b6
+### Hue Dimmer Beyond Lighting 1.0.0b7
 
 [![Import Hue Dimmer Beyond Lighting into Home Assistant](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fwestlund%2Fhassio-blueprints%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fpapamike%2Fhue_dimmer_beyond_light.yaml)
 
