@@ -1,12 +1,12 @@
 blueprint:
-  name: "Hue Dimmer Beyond Lighting 0.5.2b"
+  name: "Hue Dimmer Beyond Lighting 1.0.0b6"
   author: Michael Westlund <michael@westlund.org>
   description: >
     <h2>Hue Dimmer Beyond Lighting</h2>
     <h1><i>Short press controls lights. Long press controls your home.</i></h1>
     <p>A comprehensive control blueprint for the Philips Hue Dimmer Switch In its basic configuration it just controls the lights, but long press of the on/off buttons can be configured to do literally anything Home Assistant can do.
     <p><b>Short presses on the dim</b> buttons provide precise, predictable lighting control using configurable brightness steps.<br />
-    <b>Long presses on the dim</b> buttons continuously dims the lights up until the button is released.<br />
+    <b>Long presses on the dim</b> buttons start a continuous transition that is stopped when the button is released.<br />
     <p><b>Short presses on the on/off</b> buttons turns the light on or off using the current setting.<br />
     <b>Long presses on the on/off</b> buttons unlock unrestricted Home Assistant actions.<br />
     <p><i>Any action supported by Home Assistant can be executed — lighting, power, scenes, scripts, shutdown sequences, or entire environments.</i>
@@ -71,7 +71,7 @@ blueprint:
           default: 26
         continuous_dimmer_step:
           name: Continuous Dimmer Speed
-          description: "The speed with which the continuois dimmer dims up or down."
+          description: "The number of seconds used for a full continuous transition from minimum to maximum brightness, or vice versa. The existing input ID is retained for compatibility with earlier versions."
           selector:
             number:
               min: 1
@@ -199,49 +199,32 @@ actions:
               transition: !input step_dimmer_speed
             target: !input lights_target
       - conditions:
-        - condition: trigger
-          id: dim-up-continuous
+          - condition: trigger
+            id: dim-up-continuous
         sequence:
-          - repeat:
-              while:
-                - condition: trigger
-                  id: dim-up-continuous
-              sequence:
-                - action: light.turn_on
-                  data:
-                    transition: 0.2
-                    brightness_step: !input continuous_dimmer_step
-                  target: !input lights_target
-                - delay:
-                    # hours: 0
-                    # minutes: 0
-                    # seconds: !input continuous_dimmer_speed
-                    milliseconds: 200
+          - action: light.turn_on
+            data:
+              brightness: 255
+              transition: !input continuous_dimmer_step
+            target: !input lights_target
       - conditions:
           - condition: trigger
             id: dim-stop
         sequence:
+          - action: light.turn_on
+            data:
+              brightness_step: 0
+              transition: 0
+            target: !input lights_target
       - conditions:
-        - condition: trigger
-          id: dim-down-continuous
+          - condition: trigger
+            id: dim-down-continuous
         sequence:
-          - repeat:
-              while:
-                - condition: trigger
-                  id: dim-down-continuous
-              sequence:
-                - variables:
-                    step: !input continuous_dimmer_step
-                - data:
-                    transition: 0.2
-                    brightness_step: "{{ -step }}"
-                  target: !input lights_target
-                  action: light.turn_on
-                - delay:
-                    # hours: 0
-                    # minutes: 0
-                    # seconds: !input continuous_dimmer_speed
-                    milliseconds: 200
+          - action: light.turn_on
+            data:
+              brightness: 1
+              transition: !input continuous_dimmer_step
+            target: !input lights_target
       - conditions:
           - condition: trigger
             id: dim-up-step
